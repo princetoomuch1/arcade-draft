@@ -60,8 +60,12 @@ export async function render(ctx) {
       toggle('MUTE', 'muted', () => setMuted(ctx.settings.muted)),
       toggle('HOVER BLIPS', 'hoverBlips', () => setHoverBlips(ctx.settings.hoverBlips))
     ]],
-    ['MOTION', () => [toggle('REDUCE MOTION', 'reduceMotion'),
-      el('p', 't-small', 'Also follows your system setting. Applies to the next page change.')]],
+    ['MOTION AND CONTRAST', () => [
+      toggle('REDUCE MOTION', 'reduceMotion', () => ctx.refreshChrome()),
+      el('p', 't-small', 'Also follows your system setting. Stops the wipe, the shake and every blink.'),
+      toggle('HIGH CONTRAST', 'highContrast', () => ctx.refreshChrome()),
+      el('p', 't-small', 'Lifts the greys, drops the dither and the scanlines. Colours keep their meaning.')
+    ]],
     ['WALL AND DESK', () => {
       const b = el('div');
       b.append(el('p', 't-small', 'WALL MATERIAL (used when the Wall is built)'),

@@ -712,3 +712,80 @@ I asserted `clusterKey('HackRajkot')` should equal `clusterKey('Hack Rajkot')`. 
 the key never splits a run-together word. The code is right and the test was wrong: a missed
 duplicate shows the same thing twice, a small annoyance, while a wrong merge hides a real
 opportunity. Rewrote the test to assert the conservative behaviour, with a comment saying why.
+
+---
+
+## 2026-11-18 — Phase 10, PWA and polish
+
+### PWA
+
+`manifest.webmanifest` (standalone, landscape, three icons including a maskable one) and `sw.js`.
+Icons are generated from a 16×16 pixel grid by a small PNG encoder in the scratchpad, so the art
+scales by whole numbers and stays on the grid: no image dependency, no blurry upscale.
+
+**The service worker's split is the honest part.** The shell is cache-first, because it only changes
+on deploy. The **data files are network-first**, because a cached opportunity is a dated one: if the
+network answers we take it, and if it does not we fall back to cache, where the app's own freshness
+receipt then shows the real LAST CHECKED date rather than hiding the gap. Offline with nothing cached
+returns an empty payload marked `offline: true` rather than a broken page. Nothing personal passes
+through it — notes, applications and the wall live in IndexedDB and are never fetched.
+
+### Accessibility
+
+- A skip link, and a polite `aria-live` region that announces every page change and every toast.
+- Page changes move focus to the page itself, so keyboard users land on the new content.
+- Focus is a hard 2u gold outline everywhere, since the pixel law bans soft rings.
+- **High contrast** mode lifts the greys, drops the dither and the scanlines, and keeps colour
+  meaning intact. **Reduced motion** is honoured from the system *and* from Options.
+
+### Onboarding
+
+A one-time room tour naming the three places and the two promises (nothing is uploaded, nothing
+applies on your behalf). Dismissed by click, Enter, Space or Escape, remembered, never shown again.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        209 tests
+ audit       pass        copy audit included
+```
+
+### Two real bugs found while testing, both fixed
+
+1. **The tour never got focus.** `go()` returns before the page wipe finishes, so `mount()` focused
+   `#page` *after* the dialog had focused its button. My first fix — a `focusin` guard that called
+   `focus()` back — did not work either, because refocusing from inside a focus event is ignored by
+   some browsers. The real fix is the right design anyway: `mount()` does not take focus when a
+   dialog is open, and the guard now steps out of the event before refocusing. Verified:
+   focus lands on `GOT IT`, and returns to `#page` on dismiss.
+2. **The service worker served me stale code mid-test**, which is cache-first behaving exactly as
+   written. Worth recording as a working note: after changing a shell file, the first reload may
+   still run the old one. Clear the SW or bump `VERSION` in `sw.js`.
+
+### Browser verification
+
+- Manifest linked and parsed: standalone, 3 icons, one maskable, `start_url` `./`.
+  `icons/icon-512.png` serves 200 `image/png`. Service worker reached `activated`, 36 shell files
+  cached, data cache populated separately and both served from cache when asked.
+- Tour shown once, focus correct, dismissed by Escape, remembered in `meta.toured`.
+- High contrast set `data-contrast="high"` and `--muted` became `#D6D6E4`; reduced motion set
+  `data-reduce="true"`.
+- Across all 12 routes: **0 interactive elements unreachable by keyboard, 0 without an accessible
+  name, 0 manipulative copy, 0 anti-slop violations, 0 console errors.**
+
+### `sw.js` is not typechecked
+
+It runs in `ServiceWorkerGlobalScope`, whose lib conflicts with the DOM lib the rest of the project
+needs, and one TypeScript program cannot hold both. ESLint does check it with the service-worker
+globals. Stated at the top of the file so the gap is visible rather than silent.
+
+### Deviation: still desktop and tablet, not phone
+
+The spec asks for an installable Android PWA. It is installable, and offline works, but the app keeps
+its 900 × 560 minimum, so on a phone it still shows RESIZE THE WINDOW. A real phone layout means a
+portrait layout set, touch targets and a touch gesture model — a sizeable piece of work that
+contradicts the current design law, and not something to fake with a media query. Flagged for the
+user rather than quietly half-done.

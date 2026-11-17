@@ -96,4 +96,4 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 7 — shared logic | done |
 | 8 — ethical engagement | done |
 | 9 — scrape pipeline | built, no sites configured. `data/*.json` is still fictional seed data, every row carries `_mock: true` |
-| 10 — PWA, accessibility, polish | not started |
+| 10 — PWA, accessibility, polish | done (desktop and tablet; no phone layout) |

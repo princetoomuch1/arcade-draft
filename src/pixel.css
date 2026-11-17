@@ -114,3 +114,45 @@ img, canvas { image-rendering: pixelated; }
       transition-duration: .24s !important; transition-timing-function: steps(4,end) !important; }
   .blink { animation: none !important; }   /* all blinks become solid */
 }
+
+/* ---- accessibility ----
+   The pixel law bans soft focus rings, so focus is a hard 2u gold outline everywhere. */
+.skip {
+  position:absolute; left:calc(2*var(--u)); top:calc(-40*var(--u)); z-index:9999;
+  background:var(--gold); color:var(--ink); padding:calc(2*var(--u)) calc(4*var(--u));
+  border:var(--u) solid var(--ink); text-decoration:none;
+}
+.skip:focus { top:calc(2*var(--u)); }
+
+/* Announced to a screen reader, never drawn. Not display:none, which would silence it. */
+.sr-only {
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline:calc(2*var(--u)) solid var(--gold); outline-offset:0;
+}
+
+/* High contrast: the muted greys and the decorative bevels step aside, nothing else moves. */
+:root[data-contrast="high"] {
+  --muted: #D6D6E4;
+  --edge: #FFFFFF;
+  --surface: #000010;
+  --surface-hi: #141430;
+  --bevel-hi: #FFFFFF;
+}
+:root[data-contrast="high"] .d25,
+:root[data-contrast="high"] .d50,
+:root[data-contrast="high"] .d75 { background-image:none; }
+:root[data-contrast="high"] .crt { display:none !important; }
+
+/* Reduced motion, honoured whether it comes from the system or from Options. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+}
+:root[data-reduce="true"] *,
+:root[data-reduce="true"] *::before,
+:root[data-reduce="true"] *::after {
+  animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;
+}

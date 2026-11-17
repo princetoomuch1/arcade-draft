@@ -18,6 +18,15 @@ export default [
     }
   },
   {
+    // The service worker runs in its own global scope, not the page's.
+    files: ['sw.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: { ...globals.serviceworker }
+    }
+  },
+  {
     files: ['tools/**/*.mjs', 'scrapers/**/*.mjs', 'eslint.config.js', 'vitest.config.js'],
     languageOptions: {
       ecmaVersion: 2022,

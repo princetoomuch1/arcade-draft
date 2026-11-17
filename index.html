@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Career Arcade — personal opportunity hub. Desktop only.">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0F0F1B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Career Arcade</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,9 +26,17 @@
 <link rel="stylesheet" href="src/notes2.css">
 </head>
 <body>
+<a class="skip t-small" href="#page">SKIP TO THE PAGE</a>
 <div id="app" role="application" aria-label="Career Arcade">
   <noscript><p class="t-body" style="padding:2rem">This app needs JavaScript.</p></noscript>
 </div>
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
 <script type="module" src="src/main.js"></script>
+<script>
+  // Offline support. It is optional: a refused or unsupported registration changes nothing else.
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
 </body>
 </html>

@@ -900,7 +900,7 @@ export function dropExpired(items, personal, now = Date.now()) {
 /* ---------- settings ---------- */
 const DEFAULTS = {
   density: 'CHUNKY', align: 'BALANCED', dropSize: 12, volume: 0.7, muted: false, hoverBlips: false,
-  crt: false, reduceMotion: false, textScale: 1, wallMaterial: 'cork', deskAsList: false,
+  crt: false, reduceMotion: false, highContrast: false, textScale: 1, wallMaterial: 'cork', deskAsList: false,
   lang: 'en', notifications: false, personalization: true, quietHours: null, githubToken: '',
   mutedSources: [], mutedPlaces: [],
   home: { city: 'Rajkot', state: 'Gujarat', country: 'India' }

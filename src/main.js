@@ -144,6 +144,9 @@ function refreshChrome() {
   if (msg) msg.textContent = `Window is ${innerWidth} × ${innerHeight}. Minimum is 900 × 560.`;
   document.documentElement.dataset.tooSmall = String(m.tooSmall);
   const crt = $('#crt'); if (crt) crt.dataset.on = String(!!ctx.settings?.crt);
+  const root = document.documentElement;
+  root.dataset.reduce = String(!!ctx.settings?.reduceMotion);
+  root.dataset.contrast = ctx.settings?.highContrast ? 'high' : 'normal';
 }
 
 /* ---------- fullscreen. The cabinet bezel is part of the canvas, so leaving it gives the
@@ -230,6 +233,12 @@ async function mount(name, params) {
     b.setAttribute('aria-selected', String(b.dataset.route === name));
   renderKeybar(mod.keys);
   document.title = (mod.title ? mod.title + ' — ' : '') + 'Career Arcade';
+  host.setAttribute('aria-label', (mod.title || name) + ' page');
+  announce((mod.title || name) + ' page');
+  // Keyboard-only users land on the new page, not back at the top of the tab bar.
+  // A dialog that is already open keeps focus: it asked for it first.
+  host.tabIndex = -1;
+  if (!document.querySelector('.tour')) host.focus({ preventScroll: true });
 }
 
 function renderKeybar(extra = []) {
@@ -259,7 +268,13 @@ function onKey(e) {
 }
 
 /* ---------- toast ---------- */
+export function announce(text) {
+  const live = document.getElementById('live');
+  if (live) { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 50); }
+}
+
 export function toast(text, kind = '') {
+  announce(text);
   const host = $('.crt-window'); if (!host) return;
   const t = el('div', `chip t-label z-toast ${kind}`, text);
   t.style.position = 'absolute'; t.style.bottom = 'calc(16 * var(--u))'; t.style.left = 'calc(6 * var(--u))';
@@ -283,12 +298,55 @@ function bootScreen() {
   const start = () => {
     SFX.coin();
     b.innerHTML = `<div class="t-title blink" style="color:var(--gold)">PRESS START</div>`;
-    const go2 = () => { SFX.pressStart(); powerOn(); go(HOME); };
+    const go2 = async () => { SFX.pressStart(); powerOn(); await go(HOME); await roomTour(); };
     document.addEventListener('keydown', go2, { once: true });
     b.addEventListener('click', go2, { once: true });
   };
   $('#plate').onclick = () => { audioInit(); start(); };
   document.addEventListener('keydown', () => { audioInit(); start(); }, { once: true });
+}
+
+/* ---------- first time in the room ----------
+   Shown once, dismissed by anything, and never shown again. It names the three places and the two
+   promises the app makes, then gets out of the way. */
+async function roomTour() {
+  if ((await S.get('meta', 'toured'))?.v) return;
+  const host = $('.crt-window'); if (!host) return;
+
+  const card = el('div', 'tour corner-2 sh-card');
+  card.setAttribute('role', 'dialog');
+  card.setAttribute('aria-label', 'A short tour of the room');
+  card.innerHTML = `
+    <h2 class="t-title" style="color:var(--cyan)">THE ROOM</h2>
+    <p class="t-body">Three places, and you are standing in the first.</p>
+    <ul class="t-body">
+      <li><b>[D] THE DESK</b> — home. Everything you save lands here as paper you can move.</li>
+      <li><b>[F] THE COMPUTER</b> — click the monitor. Feed, jobs, hackathons, news, notes.</li>
+      <li><b>[W] THE WALL</b> — turn round. Goals, photos, what you are aiming at.</li>
+    </ul>
+    <p class="t-small" style="color:var(--lime)">Everything you write stays on this machine.
+      Nothing is uploaded, and nothing applies to anything on your behalf.</p>`;
+  const ok = el('button', 'btn is-primary t-small', 'GOT IT');
+  card.append(ok);
+  host.append(card);
+
+  const done = async () => {
+    card.remove();
+    document.removeEventListener('keydown', onAny, true);
+    document.removeEventListener('focusin', keepFocus, true);
+    await S.put('meta', { id: 'toured', v: true });
+    $('#page')?.focus({ preventScroll: true });
+  };
+  const onAny = e => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); done(); } };
+  // The page wipe focuses #page when it lands, which would pull focus out of this dialog.
+  // Refocusing during a focus event is ignored by some browsers, so step out of the event first.
+  const keepFocus = e => {
+    if (card.isConnected && !card.contains(e.target)) setTimeout(() => card.isConnected && ok.focus(), 0);
+  };
+  ok.onclick = done;
+  document.addEventListener('keydown', onAny, true);
+  document.addEventListener('focusin', keepFocus, true);
+  ok.focus();
 }
 
 function powerOn() {
@@ -332,7 +390,7 @@ async function boot() {
   });
   setInterval(refreshChrome, 30000);
 
-  if (location.hash && location.hash !== '#/') { powerOn(); go(location.hash); }
+  if (location.hash && location.hash !== '#/') { powerOn(); await go(location.hash); await roomTour(); }
   else bootScreen();
 
   if (swept) toast(`${swept} ITEM${swept > 1 ? 'S' : ''} LEFT THE DRAWER`, 'is-ghost');

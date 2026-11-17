@@ -174,3 +174,15 @@
 .btn.is-ghost { background:transparent; color:var(--muted); }
 .stub { color:var(--muted); max-width:calc(200*var(--u)); }
 .stub b { color:var(--text); font-weight:400; }
+
+/* ---- the one-time room tour ---- */
+.tour {
+  position:absolute; left:50%; top:calc(30*var(--u)); transform:translateX(-50%);
+  width:calc(180*var(--u)); max-width:calc(100% - 16*var(--u));
+  background:var(--surface); border:calc(2*var(--u)) solid var(--cyan);
+  padding:calc(6*var(--u)); z-index:60; display:grid; gap:calc(3*var(--u)); justify-items:start;
+}
+.tour h2 { margin:0; }
+.tour p { margin:0; color:var(--text); }
+.tour ul { margin:0; padding-left:calc(6*var(--u)); color:var(--text); display:grid; gap:calc(2*var(--u)); }
+.tour b { color:var(--gold); font-weight:400; }

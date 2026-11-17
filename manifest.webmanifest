@@ -1,0 +1,22 @@
+{
+  "name": "Career Arcade",
+  "short_name": "Arcade",
+  "description": "A personal opportunity hub: hackathons, AI news, IT and AI schemes, jobs, internships and project notes, as a room with a Computer, a Desk and a Wall. Everything personal stays on this device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0F0F1B",
+  "theme_color": "#0F0F1B",
+  "categories": ["productivity", "education"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "The Desk", "url": "./#/desk" },
+    { "name": "Today's drop", "url": "./#/feed" },
+    { "name": "The Wall", "url": "./#/wall" }
+  ]
+}
