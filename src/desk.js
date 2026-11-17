@@ -56,7 +56,7 @@ export async function render(ctx) {
   /* decorative objects */
   const computer = el('div', 'obj computer');
   const screen = el('button', 'screen t-small'); screen.setAttribute('aria-label', 'Computer: open the feed');
-  screen.onclick = () => { ctx.SFX.click(); ctx.go('feed'); };
+  screen.onclick = () => { ctx.SFX.powerOn(); ctx.go('menu'); };   // sit down at the Computer
   computer.append(Object.assign(el('div', 'monitor'), {}), el('div', 'stand'), el('div', 'base'));
   computer.firstChild.append(screen);
   const kb = el('div', 'keyboard'); for (let i = 0; i < 28; i++) kb.append(el('i'));

@@ -199,6 +199,38 @@ async function trimInferred() {
 }
 export const weightMap = () => all('weights').then(ws => Object.fromEntries(ws.map(w => [w.id, w])));
 
+/* Muting a source or a place is a filter, not a weight: you asked not to see it, so it goes.
+   Kept in settings so it is visible and reversible in Options, and never silently permanent. */
+const LIST = { source: 'mutedSources', place: 'mutedPlaces' };
+export async function muteList(kind, value) {
+  const key = LIST[kind]; if (!key || !value) return [];
+  const s = await settings();
+  const v = String(value).toLowerCase();
+  const next = s[key].includes(v) ? s[key] : [...s[key], v];
+  await setSetting(key, next);
+  return next;
+}
+export async function unmuteList(kind, value) {
+  const key = LIST[kind]; if (!key) return [];
+  const s = await settings();
+  const next = s[key].filter(x => x !== String(value).toLowerCase());
+  await setSetting(key, next);
+  return next;
+}
+/** Drop the rows whose source or place you muted. Nothing else filters the feed. */
+export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) {
+  if (!mutedSources.length && !mutedPlaces.length) return items;
+  const src = new Set(mutedSources), place = new Set(mutedPlaces);
+  return items.filter(it => {
+    const s = String(it.source?.name ?? it.source ?? '').toLowerCase();
+    if (s && src.has(s)) return false;
+    for (const p of [it.city, it.state, it.country]) {
+      if (p && place.has(String(p).toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
 /* ---------- deadline plans: official date is locked, the rest is yours ---------- */
 export async function planFor(item) {
   const p = await get('plans', item.id);
@@ -329,6 +361,7 @@ const DEFAULTS = {
   density: 'CHUNKY', align: 'BALANCED', dropSize: 12, volume: 0.7, muted: false, hoverBlips: false,
   crt: false, reduceMotion: false, textScale: 1, wallMaterial: 'cork', deskAsList: false,
   lang: 'en', notifications: false, personalization: true, quietHours: null, githubToken: '',
+  mutedSources: [], mutedPlaces: [],
   home: { city: 'Rajkot', state: 'Gujarat', country: 'India' }
 };
 export async function settings() { return { ...DEFAULTS, ...((await get('meta', 'settings'))?.v || {}) }; }

@@ -88,7 +88,7 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | Phase | State |
 | --- | --- |
 | 0 — toolchain, data model, store v2, CI | done |
-| 1 — Computer shell + Feed | next |
+| 1 — Computer shell + Feed, cabinet, fullscreen, main menu | done |
 | 2–4 — Jobs/Apps, Hackathons/News, Notes/Calendar | pages exist, need the spec's extras |
 | 5–6 — Desk and Wall | built, need item types, crumple, auto-strings, shake bias, wall photos |
 | 7–8 — shared logic, ethical engagement | not started |

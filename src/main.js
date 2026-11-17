@@ -1,7 +1,7 @@
 /* Opportunity Hub — boot, router, chrome. UI Spec v2 sections 6, 7, 14.2, 18.
    Desktop only: mouse and keyboard, landscape, minimum 900 x 560 CSS px. */
 
-import { apply, metrics } from './u.js';
+import { apply, metrics, FRAME_U } from './u.js';
 import * as S from './store.js';
 import { init as audioInit, SFX, setVolume, setMuted, setHoverBlips, toggleMute, touch as audioTouch } from './sound.js';
 
@@ -10,6 +10,7 @@ const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) 
 
 /* ---------- pages. Each module exports render(ctx) -> HTMLElement and optional keys/title. ---------- */
 const PAGES = {
+  menu:    () => import('./pages/menu.js'),
   feed:    () => import('./pages/feed.js'),
   jobs:    () => import('./pages/jobs.js'),
   hacks:   () => import('./pages/hacks.js'),
@@ -38,7 +39,7 @@ const HOME = 'desk';
 /* ---------- app state shared with pages ---------- */
 export const ctx = {
   items: [], weights: {}, settings: null, coins: 0, level: 1, startedAt: Date.now(),
-  go, toast, refreshChrome, SFX
+  go, toast, refreshChrome, SFX, frameNow, toggleFullscreen
 };
 
 /* ---------- data ---------- */
@@ -68,7 +69,20 @@ function buildChrome() {
 
   const cabinet = el('div', 'cabinet');
   const win = el('div', 'crt-window corner-3');
-  cabinet.append(win);
+
+  // Painted on the bezel, not on the screen: a coin slot one side, a joystick the other.
+  const slot = el('div', 'cab-art left');
+  slot.innerHTML = `<svg viewBox="0 0 10 10" aria-hidden="true" shape-rendering="crispEdges">
+    <rect x="0" y="1" width="10" height="8" fill="#5C3A21"/><rect x="1" y="2" width="8" height="6" fill="#2A1A10"/>
+    <rect x="4" y="3" width="2" height="4" fill="#000"/><rect x="3" y="3" width="1" height="1" fill="#A0522D"/>
+    </svg><span class="t-small">1 COIN</span>`;
+  const stick = el('div', 'cab-art right');
+  stick.innerHTML = `<span class="t-small">[SHIFT+F] FULL</span>
+    <svg viewBox="0 0 10 10" aria-hidden="true" shape-rendering="crispEdges">
+    <rect x="1" y="7" width="8" height="2" fill="#5C3A21"/><rect x="4" y="3" width="2" height="4" fill="#2A1A10"/>
+    <rect x="3" y="1" width="4" height="3" fill="#C41E3A"/><rect x="4" y="1" width="1" height="1" fill="#FF6B6B"/>
+    </svg>`;
+  cabinet.append(win, slot, stick);
 
   // top bar
   const top = el('div', 'topbar');
@@ -78,10 +92,13 @@ function buildChrome() {
   coins.innerHTML = `<svg class="coin-icon" viewBox="0 0 8 8" aria-hidden="true"><rect x="1" y="0" width="6" height="8" fill="#FFD93D"/><rect x="0" y="1" width="8" height="6" fill="#FFD93D"/><rect x="3" y="2" width="2" height="4" fill="#0F0F1B"/></svg><span class="t-label coins" id="coins">000</span>`;
   const lvl = el('div', 't-label lvl readout'); lvl.id = 'lvl';
   const timer = el('div', 't-label timer readout'); timer.id = 'timer';
+  const full = el('button', 'btn is-ghost t-small', 'FULL');
+  full.id = 'full'; full.title = 'Fullscreen (shift+F). The cabinet slides away. F alone is the Feed.';
+  full.onclick = () => toggleFullscreen();
   const pause = el('button', 'btn is-ghost t-small', 'PAUSE');
-  pause.id = 'pause'; pause.title = 'Mute all sound (M)';
+  pause.id = 'pause'; pause.title = 'Mute all sound (shift+M)';
   pause.onclick = () => { const m = toggleMute(); pause.textContent = m ? 'MUTED' : 'PAUSE'; };
-  top.append(logo, spacer, coins, lvl, timer, pause);
+  top.append(logo, spacer, coins, lvl, timer, full, pause);
 
   // tab bar
   const tabs = el('div', 'tabbar');
@@ -122,11 +139,30 @@ function refreshChrome() {
     t.textContent = min >= 60 ? `${Math.floor(min / 60)}H` : `${min}M`;
     t.title = 'Time in this session. Click PAUSE to mute.';
   }
-  const m = metrics(ctx.settings?.density || 'CHUNKY');
+  const m = metrics(ctx.settings?.density || 'CHUNKY', innerWidth, innerHeight, devicePixelRatio || 1, frameNow());
   const msg = $('#small-msg');
   if (msg) msg.textContent = `Window is ${innerWidth} × ${innerHeight}. Minimum is 900 × 560.`;
   document.documentElement.dataset.tooSmall = String(m.tooSmall);
   const crt = $('#crt'); if (crt) crt.dataset.on = String(!!ctx.settings?.crt);
+}
+
+/* ---------- fullscreen. The cabinet bezel is part of the canvas, so leaving it gives the
+   screen those 6u back on every side. The browser may refuse the request; the bezel still goes. ---- */
+let fullscreen = false;
+export function frameNow() { return fullscreen ? 0 : FRAME_U; }
+
+export async function toggleFullscreen(want = !fullscreen) {
+  fullscreen = want;
+  document.documentElement.dataset.fullscreen = String(fullscreen);
+  try {
+    if (fullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+    if (!fullscreen && document.fullscreenElement) await document.exitFullscreen?.();
+  } catch { /* a refused request only costs us the browser chrome, not the bezel */ }
+  apply(ctx.settings?.density || 'CHUNKY', document.documentElement, frameNow());
+  refreshChrome();
+  const b = $('#full'); if (b) b.textContent = fullscreen ? 'WINDOW' : 'FULL';
+  SFX.click();
+  return fullscreen;
 }
 
 /* ---------- 14.2 page wipe: 240 ms in, swap while covered, 240 ms out. Input back at 360 ms. ---------- */
@@ -193,6 +229,7 @@ function onKey(e) {
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
   audioInit(); audioTouch();
+  if (k === 'f' && e.shiftKey) { e.preventDefault(); toggleFullscreen(); return; }
   if (KEYS[k]) { e.preventDefault(); SFX.click(); return go(KEYS[k]); }
   if (k === 'escape') { e.preventDefault(); SFX.back(); return go(HOME); }
   if (k === 'm' && e.shiftKey) { e.preventDefault(); const m = toggleMute(); const p = $('#pause'); if (p) p.textContent = m ? 'MUTED' : 'PAUSE'; return; }
@@ -243,7 +280,8 @@ function powerOn() {
 /* ---------- boot ---------- */
 async function boot() {
   ctx.settings = await S.settings();
-  apply(ctx.settings.density);
+  document.documentElement.dataset.fullscreen = 'false';
+  apply(ctx.settings.density, document.documentElement, frameNow());
   buildChrome();
   refreshChrome();
 
@@ -266,7 +304,11 @@ async function boot() {
 
   addEventListener('keydown', onKey);
   addEventListener('popstate', () => go(location.hash || '#/feed'));
-  addEventListener('resize', () => { apply(ctx.settings.density); refreshChrome(); });
+  addEventListener('resize', () => { apply(ctx.settings.density, document.documentElement, frameNow()); refreshChrome(); });
+  // Leaving fullscreen with Esc or the browser's own control must bring the cabinet back.
+  addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && fullscreen) toggleFullscreen(false);
+  });
   setInterval(refreshChrome, 30000);
 
   if (location.hash && location.hash !== '#/') { powerOn(); go(location.hash); }

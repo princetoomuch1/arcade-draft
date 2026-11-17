@@ -3,11 +3,34 @@
 
 #app { position:relative; width:100vw; height:100vh; overflow:hidden; background:#07070E; }
 
-/* ---- cabinet shell: the wood/metal box the monitor sits in ---- */
+/* ---- cabinet shell: the wood box the monitor sits in. The bezel is --frame u on every side,
+       taken out of the canvas by u.js, so hiding it never changes the size of a single glyph. ---- */
 .cabinet {
   position:absolute; inset:0; display:grid; place-items:center;
-  background:var(--bg);
+  background-color:var(--wood);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='8'><rect width='16' height='8' fill='%238B5A2B'/><rect y='7' width='16' height='1' fill='%235C3A21'/><rect x='3' y='2' width='7' height='1' fill='%23A0522D'/><rect x='11' y='5' width='4' height='1' fill='%235C3A21'/></svg>");
+  background-size:calc(16*var(--u)) calc(8*var(--u));
 }
+/* The screen sits in a dark recess, so the glass reads as set into the wood rather than painted on. */
+.cabinet::before {
+  content:""; position:absolute;
+  top:calc((var(--frame) - 2)*var(--u)); bottom:calc((var(--frame) - 2)*var(--u));
+  left:calc((var(--frame) - 2)*var(--u)); right:calc((var(--frame) - 2)*var(--u));
+  background:var(--bevel-lo);
+  box-shadow: inset calc(2*var(--u)) calc(2*var(--u)) 0 0 #3A2416,
+              inset calc(-2*var(--u)) calc(-2*var(--u)) 0 0 #A0522D;
+}
+:root[data-fullscreen="true"] .cabinet { background-image:none; background-color:#000; }
+:root[data-fullscreen="true"] .cabinet::before,
+:root[data-fullscreen="true"] .cab-art { display:none; }
+
+/* ---- coin slot and joystick, painted on the bottom bezel. The bezel is 6u, so the marks are 4u
+       and carry no text: the keybar already names the keys, and a label here would spill onto glass. ---- */
+.cab-art { position:absolute; bottom:calc(1*var(--u)); pointer-events:none; }
+.cab-art.left  { left:calc(1*var(--u)); }
+.cab-art.right { right:calc(1*var(--u)); }
+.cab-art svg { width:calc(4*var(--u)); height:calc(4*var(--u)); display:block; }
+.cab-art .t-small { display:none; }
 .crt-window {
   position:relative; overflow:hidden;
   width:calc(var(--cw) * var(--u)); height:calc(var(--ch) * var(--u));

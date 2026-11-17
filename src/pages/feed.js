@@ -1,7 +1,7 @@
 /* FEED — "Adventure Mode" and the Stage card. UI Spec v2 section 9.
    Desktop: two panes (list 162u + evidence 94u), keyboard-first. */
 
-import { assembleDrop, mark, bump, muteTopic, STATE, setSetting } from '../store.js';
+import { assembleDrop, mark, bump, muteTopic, muteList, applyMutes, weightMap, STATE, setSetting } from '../store.js';
 
 export const title = 'Today';
 export const keys = [['J/K','MOVE'],['S','SAVE'],['P','PLAN'],['X','LESS'],['?','WHY'],['ENTER','OPEN']];
@@ -372,9 +372,14 @@ export async function render(ctx) {
       for (const [label, val] of opts) {
         const b = el('button', 'chip t-small is-ghost', `${label} ${String(val).toUpperCase()}`);
         b.onclick = async () => {
-          if (label === 'TOPIC') await muteTopic(val);
-          ctx.toast(`MUTED ${label} ${String(val).toUpperCase()}`, 'is-ghost');
+          if (label === 'TOPIC') { await muteTopic(val); ctx.weights = await weightMap(); }
+          else {
+            const kind = label === 'SOURCE' ? 'source' : 'place';
+            ctx.settings[kind === 'source' ? 'mutedSources' : 'mutedPlaces'] = await muteList(kind, val);
+          }
+          ctx.toast(`MUTED ${label} ${String(val).toUpperCase()} — UNDO IN OPTIONS`, 'is-ghost');
           row.remove();
+          draw(true);                     // it is muted, so it leaves the drop now, not next reload
         };
         row.append(b);
       }
@@ -498,16 +503,18 @@ export async function render(ctx) {
   function draw(reshuffle = false) {
     list.innerHTML = '';
     cards = [];
+    // A muted source or place is a filter you asked for, so it is applied to both views.
+    const pool = applyMutes(ctx.items, ctx.settings);
     let drop;
     if (view === 'ALL') {
-      drop = ctx.items.map(it => ({ item: it, s: { daysLeft: it.deadline ? (new Date(it.deadline).getTime() - Date.now()) / 864e5 : null, why: ['place'], place: '' }, tag: 'ALL' }));
+      drop = pool.map(it => ({ item: it, s: { daysLeft: it.deadline ? (new Date(it.deadline).getTime() - Date.now()) / 864e5 : null, why: ['place'], place: '' }, tag: 'ALL' }));
       const key = { RELEVANCE:null, NEWEST:'firstSeen', DEADLINE:'deadline', SOURCE:'source' }[sort];
       if (key === 'firstSeen') drop.sort((a, b) => new Date(b.item.firstSeen).getTime() - new Date(a.item.firstSeen).getTime());
       if (key === 'deadline')  drop.sort((a, b) => (a.s.daysLeft ?? 1e9) - (b.s.daysLeft ?? 1e9));
       if (key === 'source')    drop.sort((a, b) => String(a.item.source?.name).localeCompare(String(b.item.source?.name)));
-      if (key === null) drop = assembleDrop(ctx.items, ctx.weights, { n: ctx.items.length, align });
+      if (key === null) drop = assembleDrop(pool, ctx.weights, { n: pool.length, align });
     } else {
-      drop = assembleDrop(ctx.items, ctx.weights, { n: ctx.settings.dropSize, align });
+      drop = assembleDrop(pool, ctx.weights, { n: ctx.settings.dropSize, align });
       if (lens !== 'ALL') drop = [...drop].sort((a, b) => (b.s.total + lensBoost(b)) - (a.s.total + lensBoost(a)));
     }
 

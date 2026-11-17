@@ -113,3 +113,93 @@ Served with `npm run dev`, driven in a real browser.
 - Calendar prints `1630 DAYS` for a far-off deadline. Correct, ugly. Phase 4 owns Calendar.
 - Still to settle with the user: desktop-only vs a real Android PWA layout (the README currently
   states there is no portrait or touch layout); scraper target sites; GitHub remote for CI.
+
+---
+
+## 2026-11-18 — Phase 1, Computer shell + Feed
+
+**Starting point.** An audit of the existing Feed against the phase's acceptance criteria found most of
+it already built: the alignment slider (click and arrow keys), the FOR ME / ALL toggle with sorting,
+WHY THIS unfolding inline, SAVE / MORE / LESS / MUTE on every card, and a STAGE CLEAR end state. The
+work was the three things that were genuinely missing, plus one real bug the audit turned up.
+
+### Tasks
+
+**1. The cabinet is real now.** `.cabinet` was a bare centred box. It now paints a wood grain (a crisp
+SVG tile, not a gradient) with the screen set into a dark recess, a coin slot on one bezel corner and a
+joystick on the other. The bezel is `FRAME_U = 6` u on each side and comes out of the **canvas**, never
+out of **u**: `metrics()` takes a `frame` argument, subtracts `2 × frame` from the canvas in u, and
+reports `frame` back so the CSS paints exactly that. Toggling it does not move a single glyph, which a
+test asserts directly. A window below the 900 × 560 minimum gets no bezel at all, so the layout still
+holds at the edge.
+
+**2. Fullscreen.** A `FULL` button in the top bar and `shift+F`. It requests real browser fullscreen and
+drops the bezel; if the browser refuses the request, the bezel still goes, so the control always does
+something visible. `fullscreenchange` brings the cabinet back when the user leaves fullscreen by any
+other route. `F` alone stays FEED.
+
+**3. Main menu.** New `src/pages/menu.js` + `src/menu.css`: the eight Computer pages as a two-column
+grid, each with a number, a hand-drawn 14×14 pixel mark, a label and one line saying what the page is
+for, plus an honest state line (`25 ITEMS LOADED · 0 ON THE DESK`, and a `DUE WITHIN 7 DAYS` count only
+when there is one). Keys 1–8 open the pages. Clicking the Desk's monitor now opens the menu instead of
+jumping straight to the Feed, which is what "sitting down at the Computer" should do, and it reconciles
+the spec's two halves: the Desk is the room's home, the menu is the Computer's front screen.
+
+**4. Bug fixed: MUTE lied.** On a card, `MUTE → SOURCE` and `MUTE → PLACE` toasted "MUTED …" and then
+did nothing at all; only `TOPIC` was wired up. The app was claiming an action it had not taken. Added
+`muteList`/`unmuteList`/`applyMutes` to the store, backed by `mutedSources` and `mutedPlaces` in
+settings. The feed now filters both views through `applyMutes`, the card redraws immediately so the
+muted rows actually leave, the toast says `UNDO IN OPTIONS`, and Options → INTEREST PROFILE lists every
+muted source and place with an UNMUTE button. A second bug surfaced while testing that: Options
+returned early when the interest list was empty, so the muted lists never rendered. Fixed.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        57 tests, 4 files (+20 this phase: u.test.js, mute.test.js)
+ audit       pass        19 modules, 8 stylesheets
+```
+
+The audit earned its keep twice this phase: it caught `.menu` used in JS but never defined in CSS, and
+it is what forces every new stylesheet to be linked from `index.html`.
+
+### Browser verification, at 1280×800
+
+Every acceptance criterion, checked by driving the real page.
+
+- **Alignment slider changes order in real time.** BALANCED gave
+  `seed-007, seed-001, seed-014, seed-018, …`; one ArrowRight to BROADER gave
+  `seed-007, seed-001, seed-014, seed-004, …`. Different order, same frame, label updated.
+- **All four card interactions.** SAVE wrote `state SAVED, pinned_desk true, snapshot true`. MORE
+  raised the `dsa` weight 0.35 → 0.60. LESS removed the card from the drop. MUTE opened a row offering
+  `TOPIC DSA / SOURCE SEED / PLACE RAJKOT`.
+- **The mute fix, end to end.** Muting PLACE RAJKOT stored `mutedPlaces: ['rajkot']`, and the ALL view
+  then showed 20 cards with **zero** mentioning Rajkot. Options listed `rajkot UNMUTE`; clicking it
+  emptied the list.
+- **WHY THIS** unfolds inline on the card. `aria-expanded` flips to true and **zero** dialogs or modals
+  open, which is the "no nested modals" rule holding.
+- **STAGE CLEAR** reads `STAGE CLEAR! · Back tomorrow. 3 close within 3 days, 8 in Gujarat. · NO LOAD
+  MORE HERE. THE DROP ENDS ON PURPOSE.` with KEEP BROWSING and GO TO DESK. The counts are computed from
+  the drop, so a drop with neither says neither.
+- **Fullscreen.** `--frame 6 → 0`, canvas `308 → 320` u (the bezel handed back to the screen),
+  `--u` **unchanged at 4px**, bezel art `display: none`, button label `FULL → WINDOW`, and all of it
+  restored on the second press.
+- **Main menu.** Eight cells over four rows of two; key `1` routed to `#/feed`.
+- **All 12 routes** (menu, feed, jobs, hacks, news, more, notes, cal, apps, opts, desk, wall) rendered
+  with **zero console errors and zero unhandled rejections**.
+- **Anti-slop sweep, mechanical.** Walked every element in the live DOM reading computed styles for a
+  non-zero `border-radius`, any `gradient` in `background-image`, or `blur` in `filter`,
+  `backdrop-filter`, `box-shadow` or `text-shadow`. **0 violations.**
+- Screenshot: wood-grain cabinet framing the screen on all four sides, cyan `MAIN MENU` in Press Start
+  2P with its hard pixel halo, the state line beneath it, then eight bevelled cells in two columns,
+  each with a cyan number, a pixel mark and two lines of text. Keybar pinned at the bottom. Hard edges
+  throughout.
+- Test data deleted and the dev server stopped after the run.
+
+### Deviation added this phase
+
+4. **`shift+F` for fullscreen**, not `F`. `F` is FEED in the shipped keybar, same reasoning as `H`.
+   The bezel prints `[SHIFT+F] FULL` so the real key is never a guess.

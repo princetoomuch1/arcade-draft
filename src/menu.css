@@ -1,0 +1,29 @@
+/* The Computer's main menu. Eight cells, one job each. Integer u, no radius, no gradient, no blur. */
+
+.menu { max-width:calc(296*var(--u)); }
+.menu-state { display:flex; flex-wrap:wrap; gap:calc(6*var(--u)); color:var(--muted); margin-bottom:calc(6*var(--u)); }
+.menu-state .due { color:var(--orange); }
+
+.menu-grid { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); }
+.menu-cell {
+  position:relative; width:calc(142*var(--u)); min-height:calc(32*var(--u));
+  padding:calc(4*var(--u)) calc(4*var(--u)) calc(4*var(--u)) calc(26*var(--u));
+  text-align:left; cursor:pointer; color:var(--text); background:var(--surface);
+  display:grid; align-content:center; gap:calc(2*var(--u));
+}
+.menu-cell .num {
+  position:absolute; left:calc(6*var(--u)); top:calc(5*var(--u)); color:var(--cyan);
+}
+.menu-cell .mk {
+  position:absolute; left:calc(5*var(--u)); top:calc(18*var(--u));
+  width:calc(10*var(--u)); height:calc(10*var(--u)); color:var(--muted);
+}
+.menu-cell .lab { color:var(--text); }
+.menu-cell .dsc { color:var(--muted); }
+.menu-cell:hover, .menu-cell:focus-visible { background:var(--surface-hi); }
+.menu-cell:hover .lab, .menu-cell:focus-visible .lab { color:var(--cyan); }
+.menu-cell:hover .mk, .menu-cell:focus-visible .mk { color:var(--cyan); }
+.menu-cell:focus-visible { outline:calc(2*var(--u)) solid var(--gold); outline-offset:0; }
+.menu-cell:active { box-shadow: inset var(--u) var(--u) 0 0 var(--bevel-lo); }
+
+.menu-foot { color:var(--muted); margin-top:calc(6*var(--u)); }

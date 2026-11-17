@@ -48,7 +48,11 @@ export async function render(ctx) {
     ['VIDEO', () => {
       const b = el('div');
       b.append(el('p', 't-small', 'PIXEL SIZE. CHUNKY is default. Use FINE on a 1440p or larger monitor.'),
-        seg(Object.keys(DENSITY), ctx.settings.density, async v => { await set('density', v); apply(v); ctx.refreshChrome(); }));
+        seg(Object.keys(DENSITY), ctx.settings.density, async v => {
+          await set('density', v);
+          apply(v, document.documentElement, ctx.frameNow());
+          ctx.refreshChrome();
+        }));
       return [b, toggle('CRT SCANLINES', 'crt', () => ctx.refreshChrome())];
     }],
     ['SOUND', () => [
@@ -75,7 +79,7 @@ export async function render(ctx) {
         add.onclick = async () => { if (!inp.value.trim()) return; await S.chooseInterest(inp.value); ctx.weights = await S.weightMap(); ctx.SFX.save(); draw(); };
         inp.onkeydown = e => { if (e.key === 'Enter') add.click(); };
         addRow.append(inp, add); host.append(addRow);
-        if (!ws.length) { host.append(el('p', 't-small', 'Empty. Save or add things and it fills in.')); return; }
+        if (!ws.length) host.append(el('p', 't-small', 'No interests yet. Save or add things and it fills in.'));
         for (const w of ws.slice(0, 40)) {
           const r = el('div', 'interest' + (w.kind === 'explicit' ? ' is-chose' : '') + (w.paused ? ' is-muted' : ''));
           const bar = el('div', 'w'); const i = el('i'); i.style.width = `${Math.round(w.weight * 100)}%`; bar.append(i);
@@ -89,6 +93,20 @@ export async function render(ctx) {
           const x = el('button', 'btn is-ghost t-small', 'FORGET');
           x.onclick = async () => { await S.del('weights', w.id); ctx.weights = await S.weightMap(); ctx.SFX.del(); draw(); };
           r.append(x); host.append(r);
+        }
+
+        // Sources and places you muted from a card. The toast promised they are reversible here.
+        for (const [kind, key, label] of [['source', 'mutedSources', 'MUTED SOURCES'], ['place', 'mutedPlaces', 'MUTED PLACES']]) {
+          const list = ctx.settings[key] || [];
+          if (!list.length) continue;
+          host.append(el('p', 't-small', label));
+          for (const v of list) {
+            const r = el('div', 'interest is-muted');
+            r.append(el('span', 't-body', v));
+            const un = el('button', 'btn is-ghost t-small', 'UNMUTE');
+            un.onclick = async () => { ctx.settings[key] = await S.unmuteList(kind, v); ctx.SFX.click(); draw(); };
+            r.append(un); host.append(r);
+          }
         }
       };
       draw();
