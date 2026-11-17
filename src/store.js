@@ -291,6 +291,108 @@ export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) 
   });
 }
 
+/* ---------- weekly quests, and the rules that keep them kind ----------
+ *
+ * One modest outcome a week, chosen by you. The rules below are the point of the feature:
+ *   - A week you rested is a real, recorded week. It is not a gap and not a failure.
+ *   - Nothing is ever erased or reset by inactivity. No run to protect, so nothing to lose.
+ *   - Progress counts outcomes. Time spent in this app is never measured and never rewarded.
+ *   - There is no comparison with anyone else, because nothing is sent anywhere.
+ */
+
+/** ISO-8601 week key, e.g. 2026-W47. Weeks start on Monday. */
+export function weekKey(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const year = t.getUTCFullYear();
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const week = Math.ceil(((t.getTime() - jan1.getTime()) / 864e5 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+/** @returns {{id: string, quest: string, done: boolean, rest: boolean, reflection: string, at: number}} */
+export const blankWeek = (id = weekKey()) =>
+  ({ id, quest: '', done: false, rest: false, reflection: '', at: Date.now() });
+
+export async function weekFor(key = weekKey()) {
+  return (await get('meta', 'week-' + key))?.v || blankWeek(key);
+}
+export const saveWeek = w => put('meta', { id: 'week-' + w.id, v: w });
+
+/** Every week on record, oldest first. Weeks you never opened simply are not here. */
+export async function allWeeks() {
+  return (await all('meta'))
+    .filter(r => r.id.startsWith('week-'))
+    .map(r => r.v)
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * A reading of your cadence that cannot shame you: rest weeks count as kept, gaps are described
+ * rather than scored, and there is no run to break.
+ */
+export function cadence(weeks, now = new Date()) {
+  const here = weekKey(now);
+  const done = weeks.filter(w => w.done).length;
+  const rested = weeks.filter(w => w.rest).length;
+  const thisWeek = weeks.find(w => w.id === here) || blankWeek(here);
+  return {
+    weeksOnRecord: weeks.length,
+    outcomesReached: done,
+    weeksRested: rested,
+    thisWeek,
+    // deliberately no "current streak" and no "longest streak": there is nothing here to protect.
+    note: rested
+      ? `${done} reached, ${rested} rested. Both are weeks you were here.`
+      : `${done} reached out of ${weeks.length} on record.`
+  };
+}
+
+/**
+ * The progress snapshot. Outcomes only: things that happened in the world, not time in this app.
+ * Private by construction, because it is computed here and never sent.
+ */
+export function progressSnapshot({ personal = [], apps = [], goals = [], notes = [], weeks = [] } = {}) {
+  const saved = personal.filter(p => p.state && p.state !== 'SEEN').length;
+  const applied = apps.filter(a => (a.dates || []).some(d => d.stage === 'applied')).length;
+  const interviews = apps.filter(a => (a.dates || []).some(d => ['screen', 'interview'].includes(d.stage))).length;
+  const offers = apps.filter(a => a.stage === 'offer').length;
+  const goalsHit = goals.filter(g => g.gold).length;
+  const written = notes.length;
+  const reflections = weeks.filter(w => (w.reflection || '').trim()).length;
+  return {
+    outcomes: [
+      ['THINGS SAVED', saved],
+      ['APPLICATIONS SENT BY YOU', applied],
+      ['CONVERSATIONS REACHED', interviews],
+      ['OFFERS', offers],
+      ['GOALS FINISHED', goalsHit],
+      ['NOTES WRITTEN', written],
+      ['WEEKS REFLECTED ON', reflections]
+    ],
+    // stated out loud so nobody later mistakes this for an engagement metric
+    measuresTime: false
+  };
+}
+
+/* ---------- a co-op challenge, opt in, nobody ranked ----------
+   Two people agree a target and each track their own. There is no server, so there is no leaderboard
+   and no way to see anyone else's number: you compare by telling each other, if you want to. */
+export async function challenge() { return (await get('meta', 'challenge'))?.v || null; }
+export async function startChallenge(title, target, withWhom = '') {
+  const c = { title, target: Math.max(1, Number(target) || 1), withWhom, count: 0, started: Date.now() };
+  await put('meta', { id: 'challenge', v: c });
+  return c;
+}
+export async function bumpChallenge(n = 1) {
+  const c = await challenge(); if (!c) return null;
+  c.count = Math.max(0, c.count + n);
+  await put('meta', { id: 'challenge', v: c });
+  return c;
+}
+export async function endChallenge() { await del('meta', 'challenge'); return null; }
+
 /* ---------- duplicate clustering ----------
    The same opportunity turns up on four sites. Collapsing them is a kindness; hiding that we did it
    is not. A cluster always says how many it stands for and can always be opened, and a cluster you

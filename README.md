@@ -94,6 +94,6 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 4 — Notes + Calendar | done |
 | 5–6 — Desk and Wall | done |
 | 7 — shared logic | done |
-| 8 — ethical engagement | not started |
+| 8 — ethical engagement | done |
 | 9 — scrapers | not started; `data/*.json` is fictional seed data, every row carries `_mock: true` |
 | 10 — PWA, accessibility, polish | not started |

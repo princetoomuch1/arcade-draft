@@ -74,3 +74,24 @@
 .month .dot.official { background:var(--pink); }
 .month .dot.own { background:var(--cyan); }
 .month .dot.done { background:var(--lime); }
+
+/* ---- this week: one modest outcome, rest weeks recorded, nothing lost by resting ---- */
+.weekbox { margin:calc(6*var(--u)) 0; display:grid; gap:calc(3*var(--u)); justify-items:start; max-width:calc(220*var(--u)); }
+.weekrow { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; width:100%; }
+.weekrow .field { min-width:calc(100*var(--u)); }
+.weekbox textarea.field { width:100%; min-height:calc(22*var(--u)); }
+.weekbox .cp { color:var(--ink-desk); }
+.restline { color:var(--ink-desk); background:var(--paper); padding:0 calc(2*var(--u)); }
+.cadence { color:var(--ink-desk); background:var(--paper); padding:0 calc(2*var(--u)); }
+
+.milestones { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); }
+.milecard { background:var(--paper); color:var(--ink-desk); border:calc(2*var(--u)) solid var(--pin-gold);
+  padding:calc(3*var(--u)); width:calc(96*var(--u)); display:grid; gap:calc(1*var(--u)); }
+.milecard .mt { color:#8A6A00; }
+
+.coop { background:var(--paper-aged); color:var(--ink-desk); border:calc(2*var(--u)) solid #5A5248;
+  padding:calc(3*var(--u)); display:grid; gap:calc(2*var(--u)); width:100%; }
+.coop h3 { margin:0; }
+.cooprow { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
+.cooprow .field { min-width:calc(48*var(--u)); }
+.milecard .mb { color:#5A5248; }

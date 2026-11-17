@@ -60,6 +60,47 @@ for (const [f, s] of raw) {
   });
 }
 
+/* ---- copy audit ----
+   The engagement rules are only real if something enforces them. These are phrases that work by
+   making the reader anxious: a run they could break, a deadline we invented, a scarcity we made up.
+   A real deadline from a source is fine and is said plainly ("EXPIRES IN 12 DAYS"), which is why
+   the patterns below target the manipulation, not the subject. */
+/** @type {[RegExp, string][]} */
+const BANNED = [
+  [/\bdon['’]?t lose\b/i, 'loss framing'],
+  [/\byou['’]?ll lose\b/i, 'loss framing'],
+  [/\blose your\b/i, 'loss framing'],
+  [/\bstreak\b/i, 'streaks are a run to protect; this app has none'],
+  [/\bhurry\b/i, 'manufactured urgency'],
+  [/\bact (now|fast)\b/i, 'manufactured urgency'],
+  [/\blast chance\b/i, 'manufactured urgency'],
+  [/\bonly \d+ left\b/i, 'manufactured scarcity'],
+  [/\bbefore it['’]?s gone\b/i, 'manufactured scarcity'],
+  [/\bkeep your (run|streak)\b/i, 'loss framing'],
+  [/\bbroken streak\b/i, 'loss framing'],
+  [/\btime spent\b/i, 'time as a reward'],
+  [/\bminutes today\b/i, 'time as a reward'],
+  [/\bload more\b/i, 'endless feed']
+];
+/* Only what a reader can actually see is audited, so comments may name a rule in order to explain
+   it. Comments are blanked (not removed) so reported line numbers still point at the real line. */
+const stripJs = s => s
+  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+  .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, (m, p) => p + ' '.repeat(m.length - p.length));
+
+/* UI strings that state the rule itself. Allowed on purpose, each one deliberate. */
+const COPY_EXEMPT = /NOTHING HERE COUNTS TIME SPENT|No load more here/i;
+
+for (const f of [...js, 'index.html']) {
+  const src = stripJs(fs.readFileSync(f, 'utf8'));
+  src.split('\n').forEach((line, i) => {
+    if (COPY_EXEMPT.test(line)) return;
+    for (const [re, why] of BANNED) {
+      if (re.test(line)) P('manipulative copy', `${f}:${i + 1}`, `(${why})`, line.trim().slice(0, 64));
+    }
+  });
+}
+
 const html = fs.readFileSync('index.html', 'utf8');
 for (const f of cssFiles) {
   const href = f.split(path.sep).join('/');

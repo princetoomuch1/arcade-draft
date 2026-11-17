@@ -582,3 +582,77 @@ be revoked on a shared machine.
 Nothing in this session ever held a real GitHub token: the dispatch path was proved with an injected
 fetch in the unit tests and with a placeholder string in the browser. Supplying a real one is the
 user's to do, in Options.
+
+---
+
+## 2026-11-18 — Phase 8, ethical engagement
+
+The point of this phase is a set of things the app refuses to do, so the main deliverable is the
+thing that *enforces* them rather than the feature that follows them.
+
+**1. The copy audit is now part of `npm run verify`.** `tools/audit.mjs` scans every module and
+`index.html` for phrases that work by making the reader anxious: loss framing (`don't lose`,
+`lose your`, `streak`), manufactured urgency (`hurry`, `act now`, `last chance`), manufactured
+scarcity (`only N left`, `before it's gone`), time as a reward (`time spent`, `minutes today`) and
+the endless feed (`load more`). Two decisions worth recording:
+
+- It audits **only what a reader can see**. Comments are blanked out first (blanked, not removed, so
+  line numbers still point at the real line), because a comment should be free to name a rule in
+  order to explain it. My first version flagged three of my own comments, which is exactly the
+  failure mode that teaches people to ignore a checker.
+- It targets the manipulation, not the subject. A real deadline from a source is a fact and is still
+  said plainly: `EXPIRES IN 12 DAYS`, `EXPIRING SOON`. Only two UI strings are exempt, both of which
+  state the rule itself: `NOTHING HERE COUNTS TIME SPENT` and `No load more here`.
+
+**Proved it bites**, rather than trusting a clean run: appending
+`const _bad = "Do not lose your streak - hurry, last chance!"` to `wall.js` produced four failures
+across three patterns on one line. Removed again, audit clean.
+
+**2. Weekly quest.** One modest outcome a week, in your words, on the Wall. Finishing it is a single
+checkbox.
+
+**3. Cadence that cannot shame you.** `cadence()` reports weeks on record, outcomes reached and weeks
+rested. There is deliberately **no streak field of any kind** — a test asserts the serialised object
+contains no such word — because a run you could break is the thing being avoided. A rest week is
+recorded and reads `A REST WEEK. RECORDED, AND IT COUNTS AS BEING HERE.`, and the summary line becomes
+`2 reached, 1 rested. Both are weeks you were here.` Weeks you never opened are simply absent, never
+counted against you.
+
+**4. Milestone and reflection cards.** Milestones appear only for things that happened, including
+`YOU RESTED — And came back. That is part of it.` Each week takes an optional reflection.
+
+**5. Progress snapshot, outcomes only.** `progressSnapshot()` counts things saved, applications you
+sent, conversations reached, offers, goals finished, notes written and weeks reflected on. It carries
+an explicit `measuresTime: false`, and a test asserts no label contains time, minute, hour, session,
+visit or day. It is private by construction: computed locally, never sent.
+
+**6. Co-op challenge, opt in, nobody ranked.** You and someone else agree a target and each count
+your own. There is no server, so there is no table and no way to see anyone else's number — the panel
+says exactly that. A test asserts the stored object contains no rank, score, leader or position.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        172 tests, 10 files (+17 this phase: engagement.test.js)
+ audit       pass        20 modules, 11 stylesheets, copy audit included
+```
+
+### Browser verification
+
+- Setting a quest and finishing it stored
+  `{id: '2026-W47', quest: 'apply to two internships', done: true}` and the cadence line read
+  `1 REACHED OUT OF 1 ON RECORD.` A `FIRST OUTCOME` milestone card appeared.
+- **Pausing erases nothing**: with an earlier finished week on record, switching this week to rest
+  left `2026-W46 {done: true, quest: 'read two papers'}` intact and the line became
+  `2 REACHED, 1 RESTED. BOTH ARE WEEKS YOU WERE HERE.`
+- A reflection saved and persisted.
+- The co-op challenge started, counted `1 OF 3 · WITH RIYA`, and the panel body (excluding its own
+  disclaimer) contains no ranking words and shows only your own number.
+- **Progress snapshot** rendered `THINGS SAVED · APPLICATIONS SENT BY YOU · CONVERSATIONS REACHED ·
+  OFFERS · GOALS FINISHED · NOTES WRITTEN · WEEKS REFLECTED ON`, with no time measure anywhere.
+- **Copy audit over the live DOM**, not just the source: walked all 12 routes applying the same
+  banned patterns to rendered text. **0 violations.**
+- 12 routes clean, **zero console errors**, anti-slop sweep **0 violations**. Test data deleted.

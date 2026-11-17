@@ -42,6 +42,9 @@ export async function render(ctx) {
   let material = MATERIALS.includes(ctx.settings.wallMaterial) ? ctx.settings.wallMaterial : 'cork';
   const personal = (await S.all('personal')).filter(p => p.snapshot && SHOWN.includes(p.state));
   let goals = await S.all('goals');
+  const apps = await S.all('apps');
+  const notes = await S.all('notes');
+  let weeks = await S.allWeeks();   // reassigned when a week changes
   const days = await S.activeDays();
 
   /* material picker */
@@ -242,6 +245,109 @@ export async function render(ctx) {
   }
 
   /* ---- shelf: the plant grows with LVL; one trophy per finished goal and per DONE item ---- */
+  /* ================= this week =================
+     One modest outcome, chosen by you. A rest week is a week you were here, recorded as such.
+     Nothing on this wall can be lost by not turning up. */
+  const weekBox = el('div', 'weekbox'); wall.append(weekBox);
+
+  async function drawWeek() {
+    weekBox.innerHTML = '';
+    weeks = await S.allWeeks();
+    const cad = S.cadence(weeks);
+    const w = cad.thisWeek;
+
+    weekBox.append(el('h2', 'wall-cap t-label', 'THIS WEEK'));
+
+    if (w.rest) {
+      const r = el('p', 'restline t-body', 'A REST WEEK. RECORDED, AND IT COUNTS AS BEING HERE.');
+      weekBox.append(r);
+    } else {
+      const row = el('div', 'weekrow');
+      const q = el('input', 'field'); q.id = 'week-quest';
+      q.placeholder = 'one modest thing to finish this week';
+      q.value = w.quest || '';
+      q.onchange = async () => { w.quest = q.value.trim(); await S.saveWeek(w); drawWeek(); };
+      row.append(q);
+      if (w.quest) {
+        const d = el('button', 'cp t-small' + (w.done ? ' is-done' : ''));
+        d.append(el('span', 'box'), el('span', 'tx', w.done ? 'FINISHED' : 'MARK IT FINISHED'));
+        d.onclick = async () => {
+          w.done = !w.done; await S.saveWeek(w);
+          w.done ? ctx.SFX.levelUp() : ctx.SFX.click();
+          weeks = await S.allWeeks();
+          drawWeek(); drawShelf();
+        };
+        row.append(d);
+      }
+      weekBox.append(row);
+    }
+
+    const rest = el('button', 'btn is-ghost t-small', w.rest ? 'MAKE IT A WORKING WEEK' : 'MAKE THIS A REST WEEK');
+    rest.title = 'A rest week keeps everything you have already done. Nothing is reset by resting.';
+    rest.onclick = async () => { w.rest = !w.rest; await S.saveWeek(w); ctx.SFX.click(); drawWeek(); };
+    weekBox.append(rest);
+
+    const ref = el('textarea', 'field'); ref.id = 'week-reflection'; ref.rows = 2;
+    ref.placeholder = 'what you learned this week (optional)';
+    ref.value = w.reflection || '';
+    ref.onchange = async () => { w.reflection = ref.value; await S.saveWeek(w); weeks = await S.allWeeks(); drawShelf(); };
+    weekBox.append(ref);
+
+    const note = el('p', 'cadence t-small', cad.note.toUpperCase());
+    note.title = 'Rest weeks count. There is no run here to break.';
+    weekBox.append(note);
+
+    /* milestone cards: only for things that actually happened */
+    const marks = [];
+    if (cad.outcomesReached >= 1) marks.push(['FIRST OUTCOME', 'You finished a week you set yourself.']);
+    if (cad.outcomesReached >= 5) marks.push(['FIVE OUTCOMES', 'Five weeks where you finished what you chose.']);
+    if (cad.weeksRested >= 1) marks.push(['YOU RESTED', 'And came back. That is part of it.']);
+    if (marks.length) {
+      const m = el('div', 'milestones');
+      for (const [t, body] of marks) {
+        const c = el('div', 'milecard');
+        c.append(el('span', 'mt t-label', t), el('span', 'mb t-small', body));
+        m.append(c);
+      }
+      weekBox.append(m);
+    }
+
+    /* opt-in co-op challenge: no server, so nobody is ranked and nobody's number is visible */
+    const ch = await S.challenge();
+    const cbox = el('div', 'coop');
+    cbox.append(el('h3', 't-label', 'A CHALLENGE WITH SOMEONE'));
+    cbox.append(Object.assign(el('p', 't-small',
+      'OPT IN. YOU BOTH AGREE A TARGET AND EACH COUNT YOUR OWN. NOTHING IS SENT, SO THERE IS NO TABLE '
+      + 'AND NO RANKING — YOU COMPARE BY TELLING EACH OTHER, IF YOU WANT TO.'),
+    { style: 'color:var(--ink-desk)' }));
+    if (!ch) {
+      const t = el('input', 'field'); t.id = 'coop-title'; t.placeholder = 'e.g. three applications';
+      const n = el('input', 'field'); n.id = 'coop-target'; n.type = 'number'; n.min = '1'; n.value = '3';
+      const who = el('input', 'field'); who.id = 'coop-who'; who.placeholder = 'with whom (just a name for you)';
+      const go = el('button', 'btn t-small', 'START IT');
+      go.onclick = async () => {
+        if (!t.value.trim()) { t.focus(); return; }
+        await S.startChallenge(t.value.trim(), n.value, who.value.trim());
+        ctx.SFX.pin(); drawWeek();
+      };
+      const row = el('div', 'cooprow'); row.append(t, n, who, go); cbox.append(row);
+    } else {
+      const line = el('p', 't-body', `${ch.title.toUpperCase()} — ${ch.count} OF ${ch.target}`
+        + (ch.withWhom ? ` · WITH ${ch.withWhom.toUpperCase()}` : ''));
+      const bar = el('div', 'goalbar'); const fill = el('i');
+      fill.style.width = `${Math.min(100, Math.round(ch.count / ch.target * 100))}%`; bar.append(fill);
+      const plus = el('button', 'btn t-small', '+1');
+      plus.onclick = async () => { await S.bumpChallenge(1); ctx.SFX.checkpoint(); drawWeek(); };
+      const minus = el('button', 'btn is-ghost t-small', '-1');
+      minus.onclick = async () => { await S.bumpChallenge(-1); ctx.SFX.click(); drawWeek(); };
+      const stop = el('button', 'btn is-ghost t-small', 'END IT');
+      stop.onclick = async () => { await S.endChallenge(); ctx.SFX.back(); drawWeek(); };
+      const row = el('div', 'cooprow'); row.append(plus, minus, stop);
+      cbox.append(line, bar, row);
+    }
+    weekBox.append(cbox);
+  }
+
   const shelf = el('div', 'shelf'); wall.append(shelf);
   function drawShelf() {
     shelf.innerHTML = '';
@@ -261,28 +367,29 @@ export async function render(ctx) {
     shelf.append(board, el('div', 'plank'));
     if (!trophies) shelf.append(el('p', 'wall-cap t-small', 'FINISH A GOAL OR MARK AN ITEM DONE FOR A TROPHY'));
 
-    /* the journey box: counted, never estimated, and never a measure of time spent here */
-    const strings = personal.reduce((n, p) => n + (p.strings || []).length, 0);
-    const hit = goals.filter(g => g.gold).length;
+    /* the progress snapshot: outcomes that happened in the world. It is private because it is
+       computed here and never sent, and it measures no hours of any kind. */
     const stats = el('div', 'journey');
-    stats.append(el('h3', 't-small', 'YOUR JOURNEY'));
-    for (const [k, v] of [
-      ['DAYS SHOWN UP', days.length],
-      ['THINGS SAVED', personal.length],
-      ['STRINGS TIED', strings],
-      ['GOALS HIT', hit],
-      ['PINNED HERE', pins.length]
-    ]) {
+    stats.append(el('h3', 't-small', 'YOUR PROGRESS'));
+    const snap = S.progressSnapshot({ personal, apps, goals, notes, weeks });
+    for (const [k, v] of snap.outcomes) {
       const r = el('div', 'jrow');
       r.append(el('span', 't-small', k), el('b', 't-small', String(v)));
       stats.append(r);
     }
-    stats.append(Object.assign(el('p', 't-small', 'OUTCOMES, NOT HOURS. NOTHING HERE COUNTS TIME SPENT.'),
+    const extra = [['DAYS SHOWN UP', days.length], ['PINNED HERE', pins.length]];
+    for (const [k, v] of extra) {
+      const r = el('div', 'jrow');
+      r.append(el('span', 't-small', k), el('b', 't-small', String(v)));
+      stats.append(r);
+    }
+    stats.append(Object.assign(el('p', 't-small', 'OUTCOMES ONLY. NOTHING HERE COUNTS TIME SPENT.'),
       { className: 'jnote t-small' }));
     shelf.append(stats);
   }
 
   drawZones();
+  await drawWeek();
   drawGoals();
   return wrap;
 }
