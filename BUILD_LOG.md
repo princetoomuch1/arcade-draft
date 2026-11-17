@@ -350,3 +350,78 @@ level change, so they went stale when a facet changed. `buildSwitch()` now runs 
   with the badge surviving a navigation away and back, and UNDO clearing it.
 - All 12 routes rendered with **zero console errors**. Computed-style anti-slop sweep: **0 violations**.
 - Test data deleted, dev server stopped.
+
+---
+
+## 2026-11-18 — Phase 4, Notes + Calendar
+
+Both pages were the thin stage-5 versions. Both rewritten, and the logic that matters moved into
+`store.js` as pure functions so the rules are tested rather than hoped for.
+
+### Notes
+
+**Quick capture is one action.** Type a thought, paste a link, attach an image or record a voice
+memo, then CAPTURE. A bare URL becomes a link note automatically (titled by host and path, tagged
+`link`, with the URL kept as an attachment so it stays openable). Images are run through the existing
+`ditherTo16` so a photo joins the 16-colour world instead of sitting on top of it. Voice uses
+MediaRecorder and, when the browser refuses the microphone, says `MICROPHONE REFUSED — NOTHING WAS
+RECORDED` rather than failing quietly.
+
+**Related suggestions always say why, and never link anything by themselves.** `relatedNotes()`
+ranks: a shared tag ("same tag: rust"), then a wiki link in either direction ("you wrote its name in
+this note" / "it names this note"), then two or more shared words ("both mention canary and
+kubernetes"). Each suggestion carries a LINK THESE button; only that writes `related_ids`. Weak
+matches produce nothing rather than a guess.
+
+**CRAFT** is the synthesis page: question, evidence, decision, outcome, next learning. Unfilled
+sections read `not filled in` instead of being hidden, and COPY AS TEXT exports it.
+
+**Store v4** migrates the stage-5 note (`body` → `body_md`, plus the fields the model expects).
+
+### Calendar
+
+**Three dates, never confused.** OFFICIAL comes from the source and is rendered as locked text, not
+an input, with the tooltip "This is the source's date. This app does not edit it." START BY and
+CHECKPOINTS are inputs, and are yours. A start-by later than the official date is flagged in red
+rather than silently accepted. The legend states the distinction at the top of the page.
+
+**Reminders are honest about what they can do.** There is no server and no push, so the panel says
+`THESE SHOW INSIDE THIS APP WHILE IT IS OPEN. THERE IS NO SERVER, SO NOTHING IS PUSHED TO YOUR PHONE
+AND NO EMAIL IS SENT.` `dueReminders()` is pure and enforces, in order: the global OFF switch, quiet
+hours (which may wrap midnight), per-reminder snooze, and the lead time. Your start-by date takes
+precedence over the official one when you have set one.
+
+**Recurrence is only claimed when the data shows it.** `recurrence()` needs two or more consecutive
+years of the same event, matched on the title with years and version numbers stripped, landing in the
+same month give or take one. One sighting reports nothing. It never infers a pattern from the title.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        117 tests, 7 files (+29 this phase: notes.test.js)
+ audit       pass        20 modules, 11 stylesheets
+```
+
+### Browser verification
+
+- **Store v4 migration** against a real v3 database: both stage-5 notes came back with `body_md` set,
+  the old `body` key gone, and empty `tags`/`attachments` arrays.
+- **Quick capture** saved plain text and, separately, turned `https://example.test/some/page` into a
+  note titled `example.test/some/page`, tagged `link`, with a `link` attachment.
+- **Related suggestions** on the Rust note read
+  `IT NAMES THIS NOTE` and `YOU WROTE ITS NAME IN THIS NOTE`, with `related_ids` still **empty** until
+  LINK THESE was pressed — then exactly one link, shown as LINKED with an UNLINK button.
+- **Backlinks** listed both notes that name Rust.
+- **CRAFT** saved two of five sections and rendered the other three as `not filled in`.
+- **Calendar dates**: `OFFICIAL 22 NOV LOCKED` is text with no input; START BY is a date input.
+  Setting it wrote `start_by` while `official_deadline` stayed. A checkpoint saved as
+  `{text: 'draft the idea', done: false}`.
+- **Reminder rules, each proved in the running app**: with the switch off,
+  `OFF, SO NOTHING WILL FIRE.`; switched on, `1 DUE NOW.`; with quiet hours covering the current hour,
+  `QUIET HOURS: HOLDING ANYTHING DUE.`; cleared, `1 DUE NOW.` again; after SNOOZE 1 DAY,
+  `NOTHING DUE RIGHT NOW.`
+- All 12 routes rendered with **zero console errors**. Anti-slop sweep over computed styles:
+  **0 violations**. Test data deleted, dev server stopped.

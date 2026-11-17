@@ -1,0 +1,76 @@
+/* Notes capture and CRAFT, Calendar quests and reminders. Integer u, no radius, gradient or blur. */
+
+/* ---- quick capture ---- */
+.capture { display:grid; gap:calc(3*var(--u)); max-width:calc(220*var(--u)); margin-bottom:calc(5*var(--u)); }
+.capture h2 { margin:0; color:var(--cyan); }
+.caprow { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); }
+.caprow .is-rec { background:var(--danger); color:var(--ink); border-color:var(--danger); }
+.atts { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); }
+.att { display:flex; align-items:center; gap:calc(2*var(--u)); padding:calc(1*var(--u)); background:var(--surface); border:var(--u) solid var(--edge); }
+.att img { width:calc(16*var(--u)); height:calc(16*var(--u)); object-fit:contain; display:block; }
+
+.tagrow { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); align-items:center; margin-bottom:calc(4*var(--u)); }
+.tagrow > .t-small:first-child { color:var(--muted); }
+
+.note-cell .thumb { width:calc(24*var(--u)); height:calc(16*var(--u)); object-fit:cover; display:block; margin-bottom:calc(2*var(--u)); }
+.note-cell .nm { display:block; color:#7A6A50; margin-top:calc(1*var(--u)); }
+.note-view .shot { display:block; max-width:calc(128*var(--u)); margin:calc(3*var(--u)) 0; }
+.note-view audio { display:block; margin:calc(3*var(--u)) 0; width:calc(140*var(--u)); max-width:100%; }
+
+/* ---- related: suggestion, reason, and a button that does the linking ---- */
+.related { margin-top:calc(4*var(--u)); display:grid; gap:calc(2*var(--u)); }
+.related h3 { margin:0; color:var(--cyan); }
+.relrow { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
+.relrow .why { color:var(--muted); }
+
+/* ---- CRAFT ---- */
+.craft { margin-top:calc(4*var(--u)); display:grid; gap:calc(2*var(--u)); padding-top:calc(3*var(--u)); border-top:var(--u) solid var(--surface-hi); }
+.craft h3 { margin:0; color:var(--gold); }
+.crow { display:flex; gap:calc(4*var(--u)); align-items:baseline; }
+.crow .ck { color:var(--muted); min-width:calc(36*var(--u)); }
+.crow .cv { color:var(--text); }
+.cfield { display:grid; gap:calc(1*var(--u)); margin-bottom:calc(3*var(--u)); }
+.cfield label { color:var(--muted); }
+
+/* ---- calendar ---- */
+.callegend { color:var(--muted); margin-bottom:calc(5*var(--u)); }
+.callegend .k, .drow .k { padding:0 calc(2*var(--u)); border:var(--u) solid currentColor; }
+.k.off { color:var(--pink); }
+.k.own { color:var(--cyan); }
+
+.rem { display:grid; gap:calc(3*var(--u)); justify-items:start; max-width:calc(220*var(--u)); margin-bottom:calc(6*var(--u)); }
+.rem h2 { margin:0; color:var(--text); }
+.quiet-row { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
+.quiet-row .field { width:calc(28*var(--u)); min-width:0; }
+.quiet-row > .t-small { color:var(--muted); }
+.remstate { color:var(--gold); }
+.remrow { display:flex; gap:calc(4*var(--u)); align-items:center; }
+
+.quest-card { background:var(--surface); padding:calc(4*var(--u)); margin-bottom:calc(4*var(--u)); max-width:calc(232*var(--u)); display:grid; gap:calc(3*var(--u)); }
+.qhead { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:baseline; }
+.qhead .qt { color:var(--text); }
+.qhead a.qt { color:var(--cyan); }
+.qhead .qd { margin-left:auto; color:var(--muted); }
+.qhead .qd.soon { color:var(--orange); }
+
+.dates { display:grid; gap:calc(2*var(--u)); }
+.drow { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
+.drow .lk { color:var(--muted); }
+.drow .field { min-width:calc(48*var(--u)); }
+
+.cps { display:grid; gap:calc(1*var(--u)); }
+.cprow { display:flex; gap:calc(2*var(--u)); align-items:center; }
+.cprow .field { min-width:calc(72*var(--u)); }
+.quest-card .cp { color:var(--text); }
+.quest-card .cp .box { border-color:var(--edge); background:var(--bg); }
+.quest-card .cp.is-done .box { background:var(--goal-fill); }
+
+.qrem { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); align-items:center; }
+.qrem > .t-small:first-child { color:var(--muted); }
+.recur { color:var(--lime); }
+
+.expiring { margin:calc(5*var(--u)) 0; }
+.expiring h2 { margin:0 0 calc(2*var(--u)); color:var(--orange); }
+.month .dot.official { background:var(--pink); }
+.month .dot.own { background:var(--cyan); }
+.month .dot.done { background:var(--lime); }

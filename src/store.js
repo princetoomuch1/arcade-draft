@@ -3,13 +3,13 @@
    Field names follow src/model.js. Version 2 migrates the version 1 camelCase records in place. */
 
 import {
-  blankItemRecord, blankInterest, blankPlan, blankApplication, uid,
+  blankItemRecord, blankInterest, blankPlan, blankApplication, blankNote, uid,
   expiresAt as itemExpiresAt, receipt
 } from './model.js';
 
-export { uid, receipt };
+export { uid, receipt, blankNote, blankPlan };
 
-const DB = 'arcade', VER = 3;
+const DB = 'arcade', VER = 4;
 const STORES = ['items', 'personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans', 'refresh'];
 
 /* ---------- migration ---------- */
@@ -88,6 +88,15 @@ export function migrateApplication(old) {
   });
 }
 
+/** The stage-5 note shape was {title, body}. Everything else the model asks for is derived or empty. */
+export function migrateNote(old) {
+  if ('body_md' in old) return old;
+  return blankNote({
+    id: old.id, title: old.title || '', body_md: old.body || '',
+    created: old.updated ?? Date.now(), updated: old.updated ?? Date.now()
+  });
+}
+
 let db = null;
 export function open() {
   if (db) return Promise.resolve(db);
@@ -102,6 +111,9 @@ export function open() {
       }
       if (ev.oldVersion >= 1 && ev.oldVersion < 3 && tx) {
         rewrite(tx.objectStore('apps'), migrateApplication);
+      }
+      if (ev.oldVersion >= 1 && ev.oldVersion < 4 && tx) {
+        rewrite(tx.objectStore('notes'), migrateNote);
       }
     };
     r.onsuccess = () => { db = r.result; res(db); };
@@ -370,12 +382,122 @@ export function daysSilent(app, now = Date.now()) {
   return Math.floor((now - last) / 864e5);
 }
 
+/* ---------- notes ---------- */
+export const LINK_RE = /\[\[([^\]\n]+)\]\]/g;
+export const linksIn = text => [...String(text || '').matchAll(LINK_RE)].map(m => m[1].trim());
+
+const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'into', 'about',
+  'a', 'an', 'of', 'to', 'in', 'on', 'is', 'it', 'my', 'how', 'why', 'what', 'notes', 'note']);
+const words = s => String(s || '').toLowerCase().split(/[^a-z0-9+#]+/)
+  .filter(w => w.length > 2 && !STOP.has(w));
+
+/**
+ * Suggest notes related to `note`, each with the reason it was suggested. Nothing is linked by
+ * this: the caller confirms first. Notes already in related_ids are never suggested again.
+ * @returns {{note: object, reason: string, score: number}[]}
+ */
+export function relatedNotes(note, all, limit = 5) {
+  const mine = new Set(note.related_ids || []);
+  const myTags = new Set((note.tags || []).map(t => t.toLowerCase()));
+  const myLinks = new Set(linksIn(note.body_md).map(l => l.toLowerCase()));
+  const myWords = new Set(words(note.title + ' ' + note.body_md));
+
+  const out = [];
+  for (const o of all) {
+    if (o.id === note.id || mine.has(o.id)) continue;
+    const tags = (o.tags || []).filter(t => myTags.has(t.toLowerCase()));
+    const linkedFromMe = myLinks.has(String(o.title).toLowerCase());
+    const linksToMe = linksIn(o.body_md).some(l => l.toLowerCase() === String(note.title).toLowerCase());
+    const shared = [...new Set(words(o.title + ' ' + o.body_md))].filter(w => myWords.has(w));
+
+    let reason = null, score = 0;
+    if (tags.length) { reason = `same tag: ${tags.slice(0, 2).join(', ')}`; score = 100 + tags.length; }
+    else if (linkedFromMe || linksToMe) { reason = linkedFromMe ? 'you wrote its name in this note' : 'it names this note'; score = 90; }
+    else if (shared.length >= 2) { reason = `both mention ${shared.slice(0, 2).join(' and ')}`; score = shared.length; }
+    if (reason) out.push({ note: o, reason, score });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+/** Notes whose body names this one by [[title]]. Not the same as related_ids, and not editable. */
+export const backlinksTo = (note, all) =>
+  all.filter(o => o.id !== note.id &&
+    linksIn(o.body_md).some(l => l.toLowerCase() === String(note.title).toLowerCase()));
+
 /* ---------- deadline plans: official date is locked, the rest is yours ---------- */
 export async function planFor(item) {
   const p = await get('plans', item.id);
   return p || blankPlan(item.id, item.deadline ?? null);
 }
 export const savePlan = plan => put('plans', plan);
+
+/* ---------- reminders ----------
+   There is no server and no push service, so a reminder can only show while the app is open.
+   The UI says that rather than implying your phone will buzz. */
+export const LEAD_TIMES = [
+  { label: 'ON THE DAY', ms: 0 },
+  { label: '1 DAY BEFORE', ms: 864e5 },
+  { label: '3 DAYS BEFORE', ms: 3 * 864e5 },
+  { label: '1 WEEK BEFORE', ms: 7 * 864e5 }
+];
+
+/** Quiet hours may wrap midnight: {from: 22, to: 7} means 22:00 to 07:00. */
+export function inQuietHours(date, quiet) {
+  if (!quiet || quiet.from == null || quiet.to == null) return false;
+  const h = date.getHours();
+  return quiet.from <= quiet.to ? (h >= quiet.from && h < quiet.to) : (h >= quiet.from || h < quiet.to);
+}
+
+/**
+ * Which reminders are due now. Honours the global OFF switch, quiet hours and per-reminder snooze.
+ * Pure, so the rules are tested rather than hoped for.
+ */
+export function dueReminders(plans, settings, now = Date.now()) {
+  if (!settings?.notifications) return [];            // the OFF switch wins over everything
+  const when = new Date(now);
+  if (inQuietHours(when, settings.quietHours)) return [];
+  const out = [];
+  for (const p of plans) {
+    const target = p.start_by ?? p.official_deadline;
+    if (!target) continue;
+    for (const r of p.reminders || []) {
+      if (r.snoozed_until && r.snoozed_until > now) continue;
+      const fires = target - (r.lead_time || 0);
+      if (fires <= now && now <= target + 864e5) out.push({ plan: p, reminder: r, fires });
+    }
+  }
+  return out.sort((a, b) => a.fires - b.fires);
+}
+
+/* ---------- annual recurrence ----------
+   Only claimed when the data actually shows it: two or more past runs of the same event, each
+   about a year apart. One sighting is not a pattern, and this never guesses from the title alone. */
+const normTitle = t => String(t || '').toLowerCase()
+  .replace(/\b(19|20)\d{2}\b/g, '').replace(/\b(v?\d+(\.\d+)?|[ivx]+)\b/g, '')
+  .replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** @returns {{month: string, years: number[], count: number}|null} */
+export function recurrence(item, items) {
+  const key = normTitle(item.title);
+  if (!key) return null;
+  const runs = items.filter(o => normTitle(o.title) === key && (o.startDate || o.deadline));
+  const byYear = new Map();
+  for (const r of runs) {
+    const d = new Date(r.startDate || r.deadline);
+    if (Number.isNaN(d.getTime())) continue;
+    byYear.set(d.getFullYear(), d.getMonth());
+  }
+  if (byYear.size < 2) return null;                   // one run is not a pattern
+  const years = [...byYear.keys()].sort();
+  const months = years.map(y => byYear.get(y));
+  const sameMonth = months.every(m => Math.abs(m - months[0]) <= 1);
+  const yearly = years.every((y, i) => i === 0 || y - years[i - 1] === 1);
+  if (!sameMonth || !yearly) return null;
+  return { month: MONTHS[months[0]], years, count: years.length };
+}
 
 /* ---------- 15.3 score and drop assembly ---------- */
 export const PLACE = { city: 1.0, state: 0.8, country: 0.5, world: 0.2, online: 0.6 };
