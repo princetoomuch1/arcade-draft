@@ -1,0 +1,32 @@
+/* Hackathon facets, event brief and PARTY UP. Integer u, no radius, no gradient, no blur. */
+
+.facets { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); align-items:center; margin-bottom:calc(5*var(--u)); }
+.facet { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); align-items:center; }
+.facet .fl { color:var(--muted); }
+
+/* the brief: a fact and its value, or an explicit "not stated" */
+.brief { display:grid; gap:calc(2*var(--u)); margin-top:calc(3*var(--u)); }
+.brief h3 { margin:0; color:var(--cyan); }
+.brow { display:flex; gap:calc(4*var(--u)); align-items:baseline; }
+.brow .bk { color:var(--muted); min-width:calc(32*var(--u)); }
+.brow .bv { color:var(--text); }
+.unstated { color:var(--muted); }
+
+.miles { display:grid; gap:calc(1*var(--u)); }
+.mile { display:flex; gap:calc(3*var(--u)); align-items:center; color:var(--text); }
+.mile .dot { width:calc(4*var(--u)); height:calc(4*var(--u)); background:var(--gold); border:var(--u) solid var(--ink); flex:none; }
+.mile.past { color:var(--muted); }
+.mile.past .dot { background:var(--surface-hi); }
+.mile .when { margin-left:auto; color:var(--muted); }
+
+/* party up: opt in, per event, nothing leaves the machine */
+.party { margin-top:calc(4*var(--u)); padding-top:calc(3*var(--u)); border-top:var(--u) solid var(--surface-hi); display:grid; gap:calc(2*var(--u)); justify-items:start; }
+.party h3 { margin:0; color:var(--lime); }
+.pform { display:grid; gap:calc(3*var(--u)); width:100%; margin-top:calc(2*var(--u)); }
+.pform .field { width:100%; }
+.pform textarea.field { min-height:calc(28*var(--u)); color:var(--lime); }
+.prow { display:flex; gap:calc(3*var(--u)); flex-wrap:wrap; }
+
+/* a clipping you reported: the note stays with it so the claim is visible, and undoable */
+.reported { color:var(--orange); margin-top:calc(2*var(--u)); }
+.reported .btn { margin-left:calc(2*var(--u)); }

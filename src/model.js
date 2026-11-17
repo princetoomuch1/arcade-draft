@@ -37,6 +37,17 @@
  * @property {number} [sourceCount]
  * @property {string} [cluster]
  * @property {boolean} [_mock]
+ *
+ * Hackathon facets. Every one is optional, and an absent facet is never treated as a match:
+ * "we do not know" and "no" are different answers and the UI says which it has.
+ * @property {boolean} [beginnerFriendly]
+ * @property {number} [commitmentHours]  the event's own stated length
+ * @property {string} [eligibility]      who may enter, in the organiser's words
+ * @property {string} [focus]            the theme, e.g. 'civic tech'
+ * @property {number} [teamSizeMax]
+ * @property {{label: string, at: string}[]} [milestones]
+ * @property {string} [judging]
+ * @property {string} [submission]
  */
 
 /**

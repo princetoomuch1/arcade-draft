@@ -2,7 +2,7 @@
    Nothing is silently merged: a duplicate stack lists every source. A summary never replaces
    the original headline or the link to it. */
 
-import { mark, bump, STATE } from '../store.js';
+import { mark, bump, STATE, get, put, del } from '../store.js';
 import { raggedEdge } from '../sprites.js';
 
 export const title = 'News';
@@ -176,6 +176,20 @@ export async function render(ctx) {
     const less = el('button', 'btn t-small', 'LESS');
     less.onclick = async () => { await bump(lead.skills, 'less'); ctx.SFX.del(); c.remove(); ctx.toast('LESS LIKE THIS', 'is-ghost'); };
     const report = el('button', 'btn t-small', 'REPORT');
+    /** Show that this clipping carries a report of yours, and let you take it back. */
+    const markReported = async () => {
+      const prev = c.querySelector('.reported');
+      const rec = await get('meta', 'report-' + lead.id);
+      if (prev) prev.remove();
+      if (!rec) { report.textContent = 'REPORT'; return; }
+      report.textContent = 'REPORTED';
+      const tagline = el('p', 'reported t-small',
+        `YOU REPORTED THIS AS ${rec.v.reason} — SAVED HERE, SENT NOWHERE.`);
+      const undo = el('button', 'btn is-ghost t-small', 'UNDO');
+      undo.onclick = async () => { await del('meta', 'report-' + lead.id); ctx.SFX.back(); markReported(); };
+      tagline.append(' ', undo);
+      c.append(tagline);
+    };
     report.onclick = () => {
       if (c.querySelector('.rep')) return;
       const f = el('div', 'rep');
@@ -188,7 +202,15 @@ export async function render(ctx) {
       const note = el('input', 't-small'); note.placeholder = 'optional note';
       note.style.cssText = 'background:#E3D6BC;color:var(--ink-desk);border:var(--u) solid #5A5248;padding:calc(2*var(--u))';
       const send = el('button', 'btn t-small', 'SAVE NOTE');
-      send.onclick = () => { ctx.toast('NOTED LOCALLY', 'is-ghost'); f.remove(); };
+      send.onclick = async () => {
+        // It says "noted locally", so it had better be noted locally.
+        await put('meta', { id: 'report-' + lead.id, v: {
+          itemId: lead.id, title: lead.title, reason: sel.value, note: note.value, at: Date.now()
+        } });
+        ctx.toast('NOTED ON THIS MACHINE ONLY', 'is-ghost');
+        f.remove();
+        markReported();
+      };
       f.append(sel, note, send);
       c.append(f);
     };
@@ -200,6 +222,7 @@ export async function render(ctx) {
       w.style.color = '#8A3F33';
       c.append(w);
     }
+    markReported();
     return c;
   }
 

@@ -279,6 +279,45 @@ export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) 
   });
 }
 
+/* ---------- hackathon facets ----------
+   An absent facet is never a match and never a miss: "not stated" is its own answer, and the UI
+   says so rather than guessing. Selecting nothing in a facet means that facet is not filtering. */
+export const FACETS = {
+  mode: { label: 'MODE', options: ['ONLINE', 'IN PERSON'] },
+  beginner: { label: 'BEGINNER', options: ['FRIENDLY', 'NOT FRIENDLY'] },
+  commitment: { label: 'LENGTH', options: ['UNDER A DAY', '1-3 DAYS', 'LONGER'] },
+  focus: { label: 'FOCUS', options: [] }          // filled from the data at render time
+};
+
+export const commitmentBand = h =>
+  h == null ? null : h < 24 ? 'UNDER A DAY' : h <= 72 ? '1-3 DAYS' : 'LONGER';
+
+/** @returns {string|null} the facet value of this item, or null when the source never said. */
+export function facetValue(item, facet) {
+  switch (facet) {
+    case 'mode': return item.mode === 'online' ? 'ONLINE' : item.mode ? 'IN PERSON' : null;
+    case 'beginner': return item.beginnerFriendly == null ? null
+      : item.beginnerFriendly ? 'FRIENDLY' : 'NOT FRIENDLY';
+    case 'commitment': return commitmentBand(item.commitmentHours);
+    case 'focus': return item.focus ? item.focus.toUpperCase() : null;
+    default: return null;
+  }
+}
+
+/**
+ * Narrow a list by the chosen facets. `chosen` is {facet: string[]}; an empty or missing array
+ * means that facet is off. Rows whose facet the source never stated are kept only when
+ * `includeUnstated` is true, and the caller is expected to say so on screen.
+ */
+export function applyFacets(items, chosen = {}, includeUnstated = true) {
+  const active = Object.entries(chosen).filter(([, v]) => Array.isArray(v) && v.length);
+  if (!active.length) return items;
+  return items.filter(it => active.every(([facet, want]) => {
+    const v = facetValue(it, facet);
+    return v == null ? includeUnstated : want.includes(v);
+  }));
+}
+
 /* ---------- applications ----------
    Trust is the whole point of this store, so it is never inferred and never upgraded by us:
      manual    you logged it here. All we know is that you said so.

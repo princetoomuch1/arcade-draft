@@ -41,7 +41,8 @@ const defined = new Set([...css.matchAll(/\.([a-z][\w-]*)/g)].map(m => m[1]));
 const used = new Set();
 for (const f of js) {
   const s = fs.readFileSync(f, 'utf8');
-  for (const m of s.matchAll(/el\(['"][\w]+['"],\s*['"]([^'"${}]+)['"]/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
+  // \bel( only: without the boundary this also matches del('store', 'some-key') and invents classes
+  for (const m of s.matchAll(/(?<![\w.])el\(['"][\w]+['"],\s*['"]([^'"${}]+)['"]/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   for (const m of s.matchAll(/class="([^"${}]+)"/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   for (const m of s.matchAll(/className\s*=\s*['"]([^'"${}]+)['"]/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   for (const m of s.matchAll(/querySelector(?:All)?\(['"]\.([\w-]+)/g)) used.add(m[1]);

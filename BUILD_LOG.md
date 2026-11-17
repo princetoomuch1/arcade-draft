@@ -276,3 +276,77 @@ from `MISSING` to `NOT STATED`, matching every other row in the compare table.
 
 5. **Stages are the spec's five plus `planned`.** `ghosted` is deliberately not a stage: it is an
    absence, so it is computed from the dates rather than being something anyone declares.
+
+---
+
+## 2026-11-18 — Phase 3, Hackathons + News
+
+**Starting point.** Hacks had the CITY/STATE/COUNTRY/WORLD switch, the radar and graticule maps, the
+online lane and ADD TO QUESTS. News had the ticker, clippings, AI summary beside the original, the
+source stack and hot topics. Missing: facets, the event brief, PARTY UP. Plus one false claim in News.
+
+### Tasks
+
+**1. Facets, in the store so they are testable without a browser.** `facetValue()`, `commitmentBand()`
+and `applyFacets()` in `store.js`. The rule that shaped the whole design: **an absent facet is never a
+match and never a miss.** "The organiser did not say" is its own answer, so those rows are kept by
+default and a `KEEPING / HIDING "NOT STATED"` toggle makes the choice yours rather than ours. The facet
+bar shows MODE, BEGINNER, LENGTH and FOCUS (focus options read from the data), each chip carrying a
+live count, plus `CLEAR (n HIDDEN)` so the cost of a filter is always on screen.
+
+**2. Event brief.** Format, beginners, length, team size, eligibility, submission and judging. Each
+line is the listing's value or a greyed `NOT STATED` with the tooltip "The listing does not say. This
+app will not guess it." Milestones render as a dated track with past ones dimmed.
+
+**3. PARTY UP, consent-based by construction.** Off until you open it, per event, stored on this
+machine. There is no server, so it cannot send anything even by accident: it builds a blurb you copy
+and post yourself, wherever you choose. FORGET THIS deletes it. The panel says all of that in the
+first line rather than burying it.
+
+**4. Seed data.** Added the facet fields to six hackathon rows and milestones to every dated one, and
+deliberately left some rows without facets so that the "not stated" path is exercised by real data
+rather than only by unit tests.
+
+**5. Bug fixed: REPORT lied.** News' report-outdated form toasted `NOTED LOCALLY` and then threw the
+input away. Same class of bug as Phase 1's mute. It now writes the reason and note to the store, the
+clipping carries `YOU REPORTED THIS AS <reason> — SAVED HERE, SENT NOWHERE` with an UNDO, the button
+reads REPORTED, and it survives a re-render.
+
+**6. Bug fixed in the audit itself.** Its class-extraction regex for `el('tag','class')` was unanchored,
+so `del('meta', 'party-' + id)` matched as `el(` and invented a `.party-` class. Added a boundary.
+The audit was wrong, not the code — worth recording, because a checker that cries wolf gets ignored.
+
+**7. Stale counts.** The level switch counts come from the filtered pool but were only rebuilt on a
+level change, so they went stale when a facet changed. `buildSwitch()` now runs on every facet change.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        88 tests, 6 files (+14 this phase: facets.test.js)
+ audit       pass        20 modules, 10 stylesheets
+```
+
+### Browser verification
+
+- **View toggle** works: CITY 2 / STATE 6 / COUNTRY 9 / WORLD 9, counts from the filtered pool.
+- **Facets narrow correctly.** ONLINE → `CLEAR (9 HIDDEN)` of 11. BEGINNER=FRIENDLY keeping unstated
+  → 2 hidden (only the two explicit "not friendly" rows go). Switching to `HIDING "NOT STATED"` →
+  8 hidden, because only three rows actually say they are beginner friendly. CLEAR restored everything.
+  That difference between 2 and 8 is the whole point of the rule, and it is visible on screen.
+- **Event brief** rendered in full for a faceted row: `FORMAT IN PERSON · BEGINNERS FRIENDLY ·
+  LENGTH 48 HOURS · TEAM SIZE UP TO 4 · ELIGIBILITY … · SUBMISSION … · JUDGING …`, then
+  `MILESTONES: REGISTRATION CLOSES 22 NOV · EVENT STARTS 29 NOV · SUBMISSIONS CLOSE 1 DEC`.
+- **PARTY UP is consent-based.** The form is absent until opened. Filling it and pressing BUILD IT
+  produced `Looking for teammates for Rajkot Civic Tech Build 48. I bring backend, python. Looking for
+  design. Time zone Asia/Calcutta. Beginners welcome. https://seed.local/h/1` and stored exactly that
+  under `party-seed-001`. FORGET THIS removed it.
+- **Ticker** moves, **pauses on hover**, and resumes on leave. Hot topics render under
+  `POPULAR THIS WEEK (NOT PERSONAL)`.
+- **Report-outdated** opens a form with WRONG SUMMARY / DEAD LINK / DUPLICATE MISSED / NOT NEWS, and
+  now actually saves: `{reason: 'DEAD LINK', note: '404 since yesterday'}` under `report-seed-019`,
+  with the badge surviving a navigation away and back, and UNDO clearing it.
+- All 12 routes rendered with **zero console errors**. Computed-style anti-slop sweep: **0 violations**.
+- Test data deleted, dev server stopped.

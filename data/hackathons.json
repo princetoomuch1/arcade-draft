@@ -34,7 +34,28 @@
     "name": "SEED unstop-like",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "beginnerFriendly": true,
+   "commitmentHours": 48,
+   "eligibility": "Open to students and working professionals",
+   "focus": "civic tech",
+   "teamSizeMax": 4,
+   "judging": "Demo to a panel, 5 minutes each",
+   "submission": "Public repo plus a 2 minute video",
+   "milestones": [
+    {
+     "label": "Registration closes",
+     "at": "2026-11-21T19:11:45.366Z"
+    },
+    {
+     "label": "Event starts",
+     "at": "2026-11-28T19:11:45.366Z"
+    },
+    {
+     "label": "Submissions close",
+     "at": "2026-11-30T19:11:45.366Z"
+    }
+   ]
   },
   {
    "id": "seed-002",
@@ -66,7 +87,26 @@
     "name": "SEED",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "beginnerFriendly": false,
+   "commitmentHours": 36,
+   "eligibility": "Undergraduates only",
+   "focus": "machine learning",
+   "teamSizeMax": 3,
+   "milestones": [
+    {
+     "label": "Registration closes",
+     "at": "2026-11-26T19:11:45.366Z"
+    },
+    {
+     "label": "Event starts",
+     "at": "2026-12-07T19:11:45.366Z"
+    },
+    {
+     "label": "Submissions close",
+     "at": "2026-12-09T19:11:45.366Z"
+    }
+   ]
   },
   {
    "id": "seed-003",
@@ -98,7 +138,26 @@
     "name": "SEED",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "beginnerFriendly": true,
+   "commitmentHours": 24,
+   "focus": "health tech",
+   "teamSizeMax": 5,
+   "submission": "Hosted prototype and a short write-up",
+   "milestones": [
+    {
+     "label": "Registration closes",
+     "at": "2026-12-17T19:11:45.366Z"
+    },
+    {
+     "label": "Event starts",
+     "at": "2026-12-17T19:11:45.366Z"
+    },
+    {
+     "label": "Submissions close",
+     "at": "2026-12-19T19:11:45.366Z"
+    }
+   ]
   },
   {
    "id": "seed-004",
@@ -130,7 +189,11 @@
     "name": "SEED",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "commitmentHours": 72,
+   "eligibility": "Anyone over 18",
+   "focus": "open source",
+   "teamSizeMax": 4
   },
   {
    "id": "seed-005",
@@ -162,7 +225,25 @@
     "name": "SEED",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "beginnerFriendly": true,
+   "commitmentHours": 8,
+   "focus": "game dev",
+   "teamSizeMax": 2,
+   "milestones": [
+    {
+     "label": "Registration closes",
+     "at": "2026-12-03T19:11:45.366Z"
+    },
+    {
+     "label": "Event starts",
+     "at": "2026-12-15T19:11:45.366Z"
+    },
+    {
+     "label": "Submissions close",
+     "at": "2026-12-16T19:11:45.366Z"
+    }
+   ]
   },
   {
    "id": "seed-006",
@@ -194,7 +275,13 @@
     "name": "SEED",
     "host": "seed.local",
     "note": "fictional seed row, not a real listing"
-   }
+   },
+   "beginnerFriendly": false,
+   "commitmentHours": 168,
+   "eligibility": "Final year students",
+   "focus": "fintech",
+   "teamSizeMax": 4,
+   "judging": "Two rounds, shortlist then finals"
   },
   {
    "id": "seed-007",

@@ -3,7 +3,7 @@
    STATE / COUNTRY / WORLD draw a lat-lon graticule. The spec's Natural Earth basemap PNGs are a
    build step that has not run yet, so no coastline is drawn: an invented coastline would be a lie. */
 
-import { mark, bump, STATE } from '../store.js';
+import { mark, bump, STATE, applyFacets, facetValue, FACETS, get, put, del } from '../store.js';
 import { pinSvg } from '../sprites.js';
 import { coordsOf, distanceKm, bearing, project, BOXES, HOME } from '../geo.js';
 import { metrics } from '../u.js';
@@ -22,16 +22,66 @@ export async function render(ctx) {
   let level = 'CITY';
   let selected = null;
 
+  /** @type {Record<string, string[]>} */
+  let facets = { mode: [], beginner: [], commitment: [], focus: [] };
+  let includeUnstated = true;
+
   const head = el('div', 'hdr');
   head.innerHTML = '<h1 class="t-display">HACKS</h1>';
+  const facetBar = el('div', 'facets');
   const sw = el('div', 'levelswitch');
   const mapwrap = el('mapwrap' in window ? 'div' : 'div', 'mapwrap');
   const lane = el('div', 'onlinelane');
   const legend = el('div', 'maplegend t-small');
   const detail = el('div');
-  wrap.append(head, sw, mapwrap, lane, legend, detail);
+  wrap.append(head, facetBar, sw, mapwrap, lane, legend, detail);
 
-  const pool = () => ctx.items.filter(it => ['hackathon', 'internship', 'event'].includes(it.type));
+  const allHacks = () => ctx.items.filter(it => ['hackathon', 'internship', 'event'].includes(it.type));
+  const pool = () => applyFacets(allHacks(), facets, includeUnstated);
+
+  /* ---- facets. Nothing is hidden for a fact the source never stated unless you ask for that. ---- */
+  function buildFacets() {
+    facetBar.innerHTML = '';
+    const spec = { ...FACETS, focus: { label: 'FOCUS', options:
+      [...new Set(allHacks().map(it => facetValue(it, 'focus')).filter(Boolean))].sort() } };
+
+    for (const [key, { label, options }] of Object.entries(spec)) {
+      if (!options.length) continue;
+      const g = el('div', 'facet');
+      g.append(el('span', 'fl t-small', label));
+      for (const o of options) {
+        const on = facets[key].includes(o);
+        const b = el('button', 'chip t-small' + (on ? ' is-cyan' : ' is-ghost'), o);
+        b.setAttribute('aria-pressed', String(on));
+        b.title = `${countWith(key, o)} match this`;
+        b.onclick = () => {
+          facets[key] = on ? facets[key].filter(x => x !== o) : [...facets[key], o];
+          ctx.SFX.click(); selected = null; buildFacets(); buildSwitch(); draw();
+        };
+        g.append(b);
+      }
+      facetBar.append(g);
+    }
+
+    const any = Object.values(facets).some(v => v.length);
+    const unstated = el('button', 'chip t-small' + (includeUnstated ? ' is-ghost' : ' is-orange'),
+      includeUnstated ? 'KEEPING "NOT STATED"' : 'HIDING "NOT STATED"');
+    unstated.title = 'Some organisers never state a facet. This decides whether those events still show.';
+    unstated.onclick = () => { includeUnstated = !includeUnstated; ctx.SFX.click(); selected = null; buildFacets(); buildSwitch(); draw(); };
+    facetBar.append(unstated);
+
+    if (any) {
+      const n = allHacks().length - pool().length;
+      const clear = el('button', 'chip t-small is-orange', `CLEAR (${n} HIDDEN)`);
+      clear.onclick = () => {
+        facets = { mode: [], beginner: [], commitment: [], focus: [] };
+        includeUnstated = true; ctx.SFX.back(); selected = null; buildFacets(); buildSwitch(); draw();
+      };
+      facetBar.append(clear);
+    }
+  }
+  const countWith = (key, o) =>
+    applyFacets(allHacks(), { ...facets, [key]: [o] }, includeUnstated).length;
 
   function inLevel(it) {
     if (it.mode === 'online') return false;           // online events live in the lane, at every level
@@ -192,6 +242,117 @@ export async function render(ctx) {
     }
   }
 
+  /* ---- event brief. Every line is from the listing or it says the listing did not say. ---- */
+  function brief(it) {
+    const b = el('div', 'brief');
+    b.append(el('h3', 't-label', 'EVENT BRIEF'));
+
+    const facts = [
+      ['FORMAT', facetValue(it, 'mode')],
+      ['BEGINNERS', facetValue(it, 'beginner')],
+      ['LENGTH', it.commitmentHours ? `${it.commitmentHours} HOURS` : null],
+      ['TEAM SIZE', it.teamSizeMax ? `UP TO ${it.teamSizeMax}` : null],
+      ['ELIGIBILITY', it.eligibility],
+      ['SUBMISSION', it.submission],
+      ['JUDGING', it.judging]
+    ];
+    for (const [k, v] of facts) {
+      const row = el('div', 'brow');
+      row.append(el('span', 'bk t-small', k));
+      const val = el('span', 'bv t-small' + (v ? '' : ' unstated'), v ? String(v).toUpperCase() : 'NOT STATED');
+      if (!v) val.title = 'The listing does not say. This app will not guess it.';
+      row.append(val);
+      b.append(row);
+    }
+
+    const ms = (it.milestones || []).filter(m => m?.at);
+    if (ms.length) {
+      b.append(el('h3', 't-label', 'MILESTONES'));
+      const track = el('div', 'miles');
+      const now = Date.now();
+      for (const m of [...ms].sort((a, b2) => new Date(a.at).getTime() - new Date(b2.at).getTime())) {
+        const t = new Date(m.at).getTime();
+        const row = el('div', 'mile' + (t < now ? ' past' : ''));
+        row.append(el('span', 'dot'), el('span', 't-small', m.label.toUpperCase()),
+          el('span', 'when t-small', new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).toUpperCase()));
+        track.append(row);
+      }
+      b.append(track);
+    } else {
+      b.append(el('p', 't-small unstated', 'NO MILESTONE DATES IN THE LISTING.'));
+    }
+    return b;
+  }
+
+  /* ---- PARTY UP. Opt in per event, stored on this machine, and nothing is sent anywhere:
+         there is no server to send it to. It produces a blurb you post yourself, where you choose. ---- */
+  function partyUp(it) {
+    const p = el('div', 'party');
+    p.append(el('h3', 't-label', 'PARTY UP'));
+    const note = el('p', 't-small',
+      'OFF BY DEFAULT. THIS APP HAS NO SERVER AND SENDS NOTHING. IT WRITES A BLURB YOU POST YOURSELF.');
+    note.style.color = 'var(--muted)';
+    p.append(note);
+
+    const open = el('button', 'btn t-small', 'WRITE A TEAM BLURB');
+    open.onclick = async () => {
+      if (p.querySelector('.pform')) { p.querySelector('.pform').remove(); open.textContent = 'WRITE A TEAM BLURB'; return; }
+      open.textContent = 'CLOSE';
+      const saved = (await get('meta', 'party-' + it.id))?.v || {};
+      const f = el('div', 'pform');
+
+      const have = el('input', 'field'); have.placeholder = 'what you bring, e.g. backend, python';
+      have.value = saved.have || ''; have.id = 'party-have-' + it.id;
+      const need = el('input', 'field'); need.placeholder = 'what the team needs, e.g. design';
+      need.value = saved.need || ''; need.id = 'party-need-' + it.id;
+      const tz = el('input', 'field'); tz.placeholder = 'time zone';
+      tz.value = saved.tz || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      tz.id = 'party-tz-' + it.id;
+
+      const beg = el('button', 'chip t-small' + (saved.beginner ? ' is-lime' : ' is-ghost'), 'BEGINNERS WELCOME');
+      beg.setAttribute('aria-pressed', String(!!saved.beginner));
+      beg.onclick = () => {
+        const on = beg.getAttribute('aria-pressed') !== 'true';
+        beg.setAttribute('aria-pressed', String(on));
+        beg.className = 'chip t-small' + (on ? ' is-lime' : ' is-ghost');
+      };
+
+      const out = el('textarea', 'field'); out.readOnly = true; out.rows = 3;
+      out.id = 'party-out-' + it.id;
+      const build = () => `Looking for teammates for ${it.title}`
+        + (have.value.trim() ? `. I bring ${have.value.trim()}` : '')
+        + (need.value.trim() ? `. Looking for ${need.value.trim()}` : '')
+        + (tz.value.trim() ? `. Time zone ${tz.value.trim()}` : '')
+        + (beg.getAttribute('aria-pressed') === 'true' ? '. Beginners welcome' : '')
+        + `. ${it.url}`;
+
+      const make = el('button', 'btn t-small is-primary', 'BUILD IT');
+      make.onclick = async () => {
+        out.value = build();
+        await put('meta', { id: 'party-' + it.id, v: {
+          have: have.value, need: need.value, tz: tz.value,
+          beginner: beg.getAttribute('aria-pressed') === 'true'
+        } });
+        ctx.SFX.save();
+      };
+      const copy = el('button', 'btn t-small', 'COPY');
+      copy.onclick = async () => {
+        if (!out.value) out.value = build();
+        try { await navigator.clipboard.writeText(out.value); ctx.toast('BLURB COPIED — POST IT WHERE YOU LIKE', 'is-ghost'); }
+        catch { out.select(); ctx.toast('SELECT AND COPY — THE CLIPBOARD WAS REFUSED', 'is-orange'); }
+      };
+      const forget = el('button', 'btn t-small is-ghost', 'FORGET THIS');
+      forget.onclick = async () => { await del('meta', 'party-' + it.id); out.value = ''; ctx.SFX.del(); ctx.toast('FORGOTTEN', 'is-ghost'); };
+
+      const row = el('div', 'prow');
+      row.append(make, copy, forget);
+      f.append(have, need, tz, beg, out, row);
+      p.append(f);
+    };
+    p.append(open);
+    return p;
+  }
+
   function drawDetail() {
     detail.innerHTML = '';
     if (!selected) return;
@@ -212,6 +373,9 @@ export async function render(ctx) {
     skills.style.cssText = 'display:flex;gap:calc(2*var(--u));flex-wrap:wrap';
     for (const s of it.skills || []) skills.append(el('span', 'chip t-small is-ghost', s.toUpperCase()));
     box.append(skills);
+
+    box.append(brief(it));
+    box.append(partyUp(it));
     const acts = el('div');
     acts.style.cssText = 'display:flex;gap:calc(3*var(--u));flex-wrap:wrap';
     const save = el('button', 'btn t-small is-primary', 'SAVE');
@@ -248,6 +412,6 @@ export async function render(ctx) {
   new MutationObserver((m, o) => { if (!wrap.isConnected) { document.removeEventListener('arcade:key', onKey); o.disconnect(); } })
     .observe(document.getElementById('page'), { childList: true });
 
-  buildSwitch(); draw();
+  buildFacets(); buildSwitch(); draw();
   return wrap;
 }
