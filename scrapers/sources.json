@@ -1,0 +1,26 @@
+{
+  "_README": [
+    "No sites are configured, on purpose. Nothing here fetches anything until you add one.",
+    "",
+    "Before adding a site, check two things yourself:",
+    "  1. its robots.txt permits the paths you want (the scraper refuses otherwise, but check first)",
+    "  2. its terms of use allow personal, non-commercial reading at a slow rate",
+    "Prefer a published feed or API over scraping HTML: it is kinder, more stable and usually",
+    "explicitly permitted. An RSS or JSON feed the publisher advertises is the best case.",
+    "",
+    "Each entry:",
+    "  name     what the UI shows as the source",
+    "  host     the hostname, shown on every card",
+    "  type     hackathon | job | internship | news | scheme | event",
+    "  kind     'feed' for RSS/Atom, 'json' for a JSON endpoint",
+    "  url      the feed or endpoint",
+    "  map      for json only: where the rows live and which field is which",
+    "",
+    "Example of a JSON feed entry, left commented out because it is an example, not a target:",
+    "  { \"name\": \"Example Board\", \"host\": \"example.org\", \"type\": \"job\",",
+    "    \"kind\": \"json\", \"url\": \"https://example.org/api/jobs.json\",",
+    "    \"map\": { \"rows\": \"results\", \"title\": \"position\", \"url\": \"link\",",
+    "              \"org\": \"company\", \"deadline\": \"closes_at\" } }"
+  ],
+  "sources": []
+}

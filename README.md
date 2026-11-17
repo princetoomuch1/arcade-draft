@@ -95,5 +95,5 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 5–6 — Desk and Wall | done |
 | 7 — shared logic | done |
 | 8 — ethical engagement | done |
-| 9 — scrapers | not started; `data/*.json` is fictional seed data, every row carries `_mock: true` |
+| 9 — scrape pipeline | built, no sites configured. `data/*.json` is still fictional seed data, every row carries `_mock: true` |
 | 10 — PWA, accessibility, polish | not started |

@@ -656,3 +656,59 @@ says exactly that. A test asserts the stored object contains no rank, score, lea
 - **Copy audit over the live DOM**, not just the source: walked all 12 routes applying the same
   banned patterns to rendered text. **0 violations.**
 - 12 routes clean, **zero console errors**, anti-slop sweep **0 violations**. Test data deleted.
+
+---
+
+## 2026-11-18 — Phase 9, scrapers
+
+**Shipped with zero sites configured, deliberately.** `scrapers/sources.json` holds an empty
+`sources` array and a README block on what to check before adding one. `npm run scrape` prints that
+nothing is configured and exits 0. Choosing which sites to read needs their robots.txt and terms
+read first, which is the user's call — so the pipeline is complete and the targets are not guessed.
+
+### What is built
+
+**`lib/robots.mjs` — the gate every request passes.** Parses robots.txt properly: a named group
+beats `*`, longest match wins, `Allow` beats `Disallow` at equal length, `*` and `$` patterns, and
+`Crawl-delay`. The rule that matters: **a site whose robots.txt cannot be read is refused**, not
+assumed fine. A 404 is the one case the standard says means no restrictions. Non-http protocols are
+refused outright.
+
+**`lib/http.mjs` — polite by construction.** One request at a time per host, a floor of one second
+between them, the site's own `Crawl-delay` honoured when it asks for more, conditional requests via
+ETag and Last-Modified so an unchanged page costs the site almost nothing, and capped backoff on 429
+and 5xx rather than retrying forever. The client identifier names the tool only and carries **no
+personal information**; a test asserts it contains no address and no account name.
+
+**`lib/parse.mjs` — feeds and JSON only.** There is deliberately **no HTML scraper**. Reading markup
+breaks constantly, strains the site, and is the part most likely to fall foul of terms of use. If a
+source offers neither feed nor API, that is worth knowing before writing anything against it.
+
+**`lib/contract.mjs` — nothing reaches `data/` without passing it.** A row with no title, no URL, a
+type outside the six, a non-http URL, or a source that cannot name itself is rejected with a stated
+reason rather than filled in. Dates that do not parse become `null`, never `Invalid Date`. Facets are
+carried only when the source actually gave them. `mergeItems()` never moves `firstSeen`, moves
+`lastChanged` only when a meaningful field moved, and keeps a vanished row at its real `lastSeen` for
+the app's own expiry rules to handle, rather than pretending it is fresh.
+
+**`run.mjs`** orchestrates, writes `data/*.json` and `data/refresh-log.json`, and steps real rows
+over the `_mock` seed rows once they arrive.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        209 tests, 11 files (+37 this phase: scrapers.test.js)
+ audit       pass
+```
+
+`npm run scrape` runs and reports that no sources are configured.
+
+### A test I had wrong
+
+I asserted `clusterKey('HackRajkot')` should equal `clusterKey('Hack Rajkot')`. It does not, because
+the key never splits a run-together word. The code is right and the test was wrong: a missed
+duplicate shows the same thing twice, a small annoyance, while a wrong merge hides a real
+opportunity. Rewrote the test to assert the conservative behaviour, with a comment saying why.
