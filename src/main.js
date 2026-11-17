@@ -177,6 +177,24 @@ function wipeSwap(fn) {
   setTimeout(() => { w.removeAttribute('data-dir'); wiping = false; }, 480);
 }
 
+/* ---------- turning round in the chair ----------
+   Desk and Wall are two walls of one room, so moving between them pans sideways instead of wiping.
+   Stepped, because the pixel law allows no eased motion. ---------- */
+const ROOM = { desk: 'left', wall: 'right' };
+function turnSwap(from, to, fn) {
+  const host = $('#page');
+  const reduce = ctx.settings?.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!host || reduce) { fn(); return; }
+  const dir = ROOM[to] === 'right' ? 'r' : 'l';
+  host.dataset.turn = 'out-' + dir;
+  SFX.turn();
+  setTimeout(() => {
+    fn();
+    host.dataset.turn = 'in-' + dir;
+    setTimeout(() => host.removeAttribute('data-turn'), 200);
+  }, 200);
+}
+
 /* ---------- router ---------- */
 let current = null;
 export async function go(route, params = {}) {
@@ -185,8 +203,11 @@ export async function go(route, params = {}) {
   if (!PAGES[name]) return go(HOME);
   if (location.hash !== `#/${r}`) { history.pushState({}, '', `#/${r}`); }
   if (current === name) { await mount(name, params); return; }
-  wipeSwap(async () => { await mount(name, params); });
+  const turning = ROOM[current] && ROOM[name] && current !== name;
+  const prev = current;
   current = name;
+  if (turning) turnSwap(prev, name, async () => { await mount(name, params); });
+  else wipeSwap(async () => { await mount(name, params); });
 }
 
 async function mount(name, params) {

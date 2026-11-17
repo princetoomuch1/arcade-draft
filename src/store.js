@@ -3,11 +3,11 @@
    Field names follow src/model.js. Version 2 migrates the version 1 camelCase records in place. */
 
 import {
-  blankItemRecord, blankInterest, blankPlan, blankApplication, blankNote, uid,
+  blankItemRecord, blankInterest, blankPlan, blankApplication, blankNote, blankWallPin, uid,
   expiresAt as itemExpiresAt, receipt
 } from './model.js';
 
-export { uid, receipt, blankNote, blankPlan };
+export { uid, receipt, blankNote, blankPlan, blankWallPin };
 
 const DB = 'arcade', VER = 4;
 const STORES = ['items', 'personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans', 'refresh'];
@@ -289,6 +289,97 @@ export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) 
     }
     return true;
   });
+}
+
+/* ---------- the desk: what each saved thing becomes when it lands on the wood ----------
+   A hackathon is a polaroid, a job an index card, news a clipping, a note a sticky, a scheme a torn
+   sheet. The kind drives size and look, so the desk reads as objects rather than as a list. */
+export const PAPER = {
+  hackathon: { kind: 'polaroid', w: 52, h: 46 },
+  event: { kind: 'polaroid', w: 52, h: 46 },
+  job: { kind: 'card', w: 60, h: 34 },
+  internship: { kind: 'card', w: 60, h: 34 },
+  news: { kind: 'clipping', w: 56, h: 38 },
+  scheme: { kind: 'torn', w: 54, h: 36 },
+  note: { kind: 'sticky', w: 40, h: 40 }
+};
+export const paperFor = item => PAPER[item?.type] || PAPER.note;
+
+/**
+ * Red strings the desk draws for you, each with the reason it exists.
+ * Capped per item so the desk never turns into a ball of wool. Strings you tied by hand are
+ * in `locked_strings` and are never proposed again, nor counted against your own choices.
+ * @returns {{a: string, b: string, reason: string}[]}
+ */
+export function autoStrings(records, max = 3) {
+  const low = s => String(s || '').toLowerCase();
+  const out = [], count = new Map();
+  const room = id => (count.get(id) || 0) < max;
+  const bump2 = id => count.set(id, (count.get(id) || 0) + 1);
+
+  // Hand-tied strings are the user's and come first: they use up the budget before any guess does.
+  for (const r of records) for (const b of r.locked_strings || []) { bump2(r.id); bump2(b); }
+
+  const pairs = [];
+  for (let i = 0; i < records.length; i++) {
+    for (let j = i + 1; j < records.length; j++) {
+      const a = records[i], b = records[j];
+      const sa = a.snapshot || {}, sb = b.snapshot || {};
+      const skills = (sa.skills || []).map(low).filter(s => (sb.skills || []).map(low).includes(s));
+      let reason = null, weight = 0;
+      if (sa.org && low(sa.org) === low(sb.org)) { reason = `same organisation: ${sa.org}`; weight = 4; }
+      else if (skills.length) { reason = `both need ${skills.slice(0, 2).join(' and ')}`; weight = 2 + skills.length; }
+      else if (sa.city && low(sa.city) === low(sb.city)) { reason = `both in ${sa.city}`; weight = 2; }
+      else if (sa.deadline && sb.deadline
+        && Math.abs(new Date(sa.deadline).getTime() - new Date(sb.deadline).getTime()) <= 3 * 864e5) {
+        reason = 'deadlines within 3 days of each other'; weight = 1;
+      }
+      if (reason) pairs.push({ a: a.id, b: b.id, reason, weight });
+    }
+  }
+  pairs.sort((x, y) => y.weight - x.weight);
+  for (const p of pairs) {
+    if (!room(p.a) || !room(p.b)) continue;
+    out.push({ a: p.a, b: p.b, reason: p.reason });
+    bump2(p.a); bump2(p.b);
+  }
+  return out;
+}
+
+/* ---------- shake to reshuffle ----------
+   Finite and useful, not a slot machine: things you have not looked at in a week come to the middle,
+   what you saved most recently sits near the monitor, and exactly one old thing is surfaced. */
+export const DESK = { w: 560, h: 400 };
+
+export function shuffleLayout(records, { now = Date.now(), rand = Math.random, world = DESK } = {}) {
+  const age = r => now - (r.saved_at || r.last_checked_at || now);
+  const stale = r => age(r) > 7 * 864e5;
+  const recent = [...records].sort((a, b) => (b.saved_at || 0) - (a.saved_at || 0)).slice(0, 3);
+  const recentIds = new Set(recent.map(r => r.id));
+
+  const staleOnes = records.filter(r => stale(r) && !recentIds.has(r.id));
+  const wildcard = staleOnes.length ? staleOnes[Math.floor(rand() * staleOnes.length) % staleOnes.length] : null;
+
+  const placed = [];
+  records.forEach((r, i) => {
+    const p = paperFor(r.snapshot);
+    let zone;
+    if (recentIds.has(r.id)) zone = 'monitor';
+    else if (stale(r)) zone = 'centre';
+    else zone = 'edge';
+    const spread = (n, lo, hi) => lo + Math.floor(rand() * Math.max(1, hi - lo - n));
+    let x, y;
+    if (zone === 'monitor') { x = spread(p.w, world.w - 150, world.w - p.w - 4); y = spread(p.h, 150, world.h - p.h - 4); }
+    else if (zone === 'centre') { x = spread(p.w, 180, 360); y = spread(p.h, 120, 280); }
+    else { x = spread(p.w, 4, world.w - p.w - 4); y = spread(p.h, 110, world.h - p.h - 4); }
+    placed.push({
+      id: r.id, zone,
+      wildcard: !!wildcard && r.id === wildcard.id,
+      pos: { x: Math.max(0, Math.min(world.w - p.w, x)), y: Math.max(0, Math.min(world.h - p.h, y)), rot: 0 },
+      order: i
+    });
+  });
+  return placed;
 }
 
 /* ---------- hackathon facets ----------

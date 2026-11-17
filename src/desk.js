@@ -4,11 +4,14 @@
 
 import * as S from './store.js';
 import { metrics } from './u.js';
+import { companySprite, raggedEdge } from './sprites.js';
 
 export const title = 'Desk';
 export const keys = [['SPACE','PICK UP'], ['ARROWS','MOVE']];
 
-const W = 560, H = 400, CW = 52, CH = 34;
+const W = 560, H = 400;
+/** Each kind of thing is its own size, so the desk reads as objects rather than as a list. */
+const size = p => S.paperFor(p?.snapshot);
 const KEEP = [S.STATE.SAVED, S.STATE.PLANNED, S.STATE.PINNED];
 const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x != null) n.textContent = x; return n; };
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -32,9 +35,14 @@ export async function render(ctx) {
   const bar = el('div', 'desk-bar');
   const stringBtn = el('button', 'btn t-small', 'RED STRING'); stringBtn.setAttribute('aria-pressed', 'false');
   const shuffleBtn = el('button', 'btn t-small', 'SHUFFLE');
+  const autoBtn = el('button', 'btn t-small', 'AUTO STRINGS');
+  autoBtn.setAttribute('aria-pressed', 'true');
+  autoBtn.title = 'The desk ties up to 3 strings per card and says why. Yours are never touched.';
   const drawerBtn = el('button', 'btn t-small', 'DRAWER');
+  const binBtn = el('button', 'btn t-small', 'BIN');
+  binBtn.title = 'Delete for good. There is one undo, and then it is gone.';
   const hint = el('span', 't-small'); hint.style.color = 'var(--muted)';
-  bar.append(stringBtn, shuffleBtn, drawerBtn, hint);
+  bar.append(stringBtn, autoBtn, shuffleBtn, drawerBtn, binBtn, hint);
   wrap.append(bar);
 
   const drawerPanel = el('div', 'drawer-panel t-body'); drawerPanel.hidden = true;
@@ -91,7 +99,11 @@ export async function render(ctx) {
 
   /* ---- cards ---- */
   const cards = new Map();
-  let stringMode = false, firstPick = null;
+  let stringMode = false, firstPick = null, autoOn = true;
+  /** Sprites are drawn in device pixels, so they need u in device pixels, not CSS. */
+  const uDev = () => metrics(ctx.settings?.density || 'CHUNKY').uDev;
+  /** The last thing binned, kept in memory only, so UNDO is always one click and never a promise. */
+  let lastBinned = null, binTimer = null;
 
   const posOf = (p, i) => p.desk_position || { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 };
 
@@ -101,17 +113,40 @@ export async function render(ctx) {
 
   function makeCard(p, i) {
     const s = p.snapshot;
-    const c = el('div', 'paper'); c.tabIndex = 0; c.setAttribute('role', 'button');
-    c.setAttribute('aria-label', `${s.title}. Press space to pick up.`);
+    const sz = size(p);
+    const c = el('div', `paper k-${sz.kind}`); c.tabIndex = 0; c.setAttribute('role', 'button');
+    c.style.width = `calc(${sz.w}*var(--u))`;
+    c.style.minHeight = `calc(${sz.h}*var(--u))`;
+    c.setAttribute('aria-label', `${s.title}. ${sz.kind}. Press space to pick up.`);
+
+    // A polaroid has a window and a handwritten caption; a clipping has a ragged top edge.
+    if (sz.kind === 'polaroid') {
+      const win = el('div', 'pframe');
+      const sp = companySprite(s.org || s.title, 2 * uDev(), '#2A2A3E');
+      sp.className = 'pshot'; win.append(sp);
+      c.append(win);
+    } else if (sz.kind === 'clipping') {
+      const rag = el('div', 'prag');
+      rag.innerHTML = raggedEdge(p.id, sz.w);
+      c.append(rag);
+    }
+
     c.append(el('span', 'pt t-small', s.title));
-    c.append(el('span', 'ps t-small', s.org || ''));
+    if (s.org) c.append(el('span', 'ps t-small', s.org));
     const dl = daysTo(s.deadline);
     if (dl != null && dl >= 0) c.append(el('span', 'pdue t-small' + (dl <= 3 ? ' is-soon' : ''), dl === 0 ? 'DUE TODAY' : `${dl}D LEFT`));
-    const toss = el('button', 'tosser t-small', 'x'); toss.title = 'Put in the drawer (14 days to change your mind)';
+
+    const toss = el('button', 'tosser t-small', 'x');
+    toss.title = 'Crumple into the drawer. 14 days to change your mind.';
     toss.onpointerdown = e => e.stopPropagation();
     toss.onclick = async e => {
-      e.stopPropagation(); p.state = S.STATE.DRAWER; p.drawer_at = Date.now();
-      await save(p); ctx.SFX.drawer(); ctx.refreshChrome(); paint();
+      e.stopPropagation();
+      c.classList.add('is-crumple');
+      ctx.SFX.crumple();
+      setTimeout(async () => {
+        p.state = S.STATE.DRAWER; p.drawer_at = Date.now(); p.status = 'archived';
+        await save(p); ctx.refreshChrome(); paint();
+      }, ctx.settings?.reduceMotion ? 0 : 220);
     };
     c.append(toss);
     const pos = posOf(p, i); p.desk_position = pos; setPos(c, pos);
@@ -126,8 +161,9 @@ export async function render(ctx) {
       c.setPointerCapture(e.pointerId); c.classList.add('is-drag', 'sh-drag'); ctx.SFX.pin();
       const move = ev => {
         const u = uCss();
-        const nx = clamp(S_snap(start.x + (ev.clientX - start.px) / u), 0, W - CW);
-        const ny = clamp(S_snap(start.y + (ev.clientY - start.py) / u), 0, H - CH);
+        const sz = size(p);
+        const nx = clamp(S_snap(start.x + (ev.clientX - start.px) / u), 0, W - sz.w);
+        const ny = clamp(S_snap(start.y + (ev.clientY - start.py) / u), 0, H - sz.h);
         if (nx !== p.desk_position.x || ny !== p.desk_position.y) moved = true;
         p.desk_position = { x: nx, y: ny }; setPos(c, p.desk_position); drawStrings();
       };
@@ -155,7 +191,8 @@ export async function render(ctx) {
       const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      p.desk_position = { x: clamp(p.desk_position.x + d[0], 0, W - CW), y: clamp(p.desk_position.y + d[1], 0, H - CH) };
+      const sz = size(p);
+      p.desk_position = { x: clamp(p.desk_position.x + d[0], 0, W - sz.w), y: clamp(p.desk_position.y + d[1], 0, H - sz.h) };
       setPos(c, p.desk_position); drawStrings();
     };
     return c;
@@ -179,11 +216,26 @@ export async function render(ctx) {
     svg.innerHTML = ''; labels.innerHTML = '';
     const byId = new Map(live().map(p => [p.id, p]));
     const seen = new Set();
-    for (const a of byId.values()) for (const bid of a.strings || []) {
-      const b = byId.get(bid); if (!b) continue;
+
+    /* Hand-tied first, then the ones the desk works out for you. Each carries its own reason,
+       and autoStrings caps how many any one card can collect. */
+    const edges = [];
+    for (const a of byId.values()) for (const bid of a.strings || []) edges.push({ a: a.id, b: bid, reason: null, mine: true });
+    if (autoOn) {
+      for (const e of S.autoStrings([...byId.values()], 3)) {
+        const key = [e.a, e.b].sort().join('|');
+        if (edges.some(x => [x.a, x.b].sort().join('|') === key)) continue;
+        edges.push({ ...e, mine: false });
+      }
+    }
+
+    for (const e of edges) {
+      const a = byId.get(e.a), b = byId.get(e.b); if (!a || !b) continue;
       const key = [a.id, b.id].sort().join('|'); if (seen.has(key)) continue; seen.add(key);
-      const ax = a.desk_position.x + CW / 2, ay = a.desk_position.y + CH / 2, bx = b.desk_position.x + CW / 2, by = b.desk_position.y + CH / 2;
-      for (const [w, col] of [[3, '#2A0810'], [1, '#C41E3A']]) {
+      const sa = size(a), sb = size(b);
+      const ax = a.desk_position.x + sa.w / 2, ay = a.desk_position.y + sa.h / 2;
+      const bx = b.desk_position.x + sb.w / 2, by = b.desk_position.y + sb.h / 2;
+      for (const [w, col] of (e.mine ? [[3, '#2A0810'], [1, '#C41E3A']] : [[3, '#2A0810'], [1, '#8A5A62']])) {
         const l = document.createElementNS(svgNS, 'line');
         l.setAttribute('x1', String(ax)); l.setAttribute('y1', String(ay));
         l.setAttribute('x2', String(bx)); l.setAttribute('y2', String(by));
@@ -192,7 +244,12 @@ export async function render(ctx) {
       const A = kw(a), B = kw(b); const shared = [...A].filter(x => B.has(x));
       const union = new Set([...A, ...B]).size || 1;
       const score = Math.round(shared.length / union * 100);
-      const lab = el('div', 't-small', `${score}% · ${shared.length ? shared.slice(0, 2).join(', ') : 'NO OVERLAP'}`);
+      const why = e.mine
+        ? `${score}% · ${shared.length ? shared.slice(0, 2).join(', ') : 'YOUR OWN STRING'}`
+        : e.reason.toUpperCase();
+      const lab = el('div', 't-small' + (e.mine ? '' : ' auto'), why);
+      lab.title = e.mine ? 'You tied this one. Click both cards in RED STRING mode to cut it.'
+        : `The desk tied this: ${e.reason}. Turn AUTO STRINGS off to hide it.`;
       lab.style.cssText = `position:absolute;left:calc(${Math.round((ax + bx) / 2) - 18}*var(--u));top:calc(${Math.round((ay + by) / 2) - 5}*var(--u));background:var(--paper);color:var(--ink-desk);border:var(--u) solid var(--string-line);padding:0 calc(1*var(--u));pointer-events:none`;
       labels.append(lab);
     }
@@ -229,7 +286,8 @@ export async function render(ctx) {
       const gone = el('button', 'btn is-ghost t-small', 'DELETE FOREVER');
       gone.onclick = async () => {
         if (gone.dataset.armed !== '1') { gone.dataset.armed = '1'; gone.textContent = 'SURE?'; return; }
-        await S.del('personal', p.id); recs = recs.filter(r => r.id !== p.id); ctx.SFX.del(); ctx.refreshChrome(); paint();
+        await binForever(p);
+        ctx.toast('BINNED — UNDO BIN IS IN THE TOOLBAR FOR 15 SECONDS', 'is-orange');
       };
       row.append(back, gone); drawerPanel.append(row);
     }
@@ -244,12 +302,70 @@ export async function render(ctx) {
     hint.textContent = stringMode ? 'CLICK TWO ITEMS TO TIE OR CUT A STRING' : '';
     ctx.SFX.click();
   };
-  shuffleBtn.onclick = async () => {
-    const list = live().sort(() => Math.random() - 0.5);
-    list.forEach((p, i) => { p.desk_position = { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 }; });
-    await Promise.all(list.map(save)); ctx.SFX.rustle(); paint();
-  };
+  shuffleBtn.onclick = () => shake();
+
+  async function shake() {
+    const list = live();
+    if (!list.length) return;
+    const layout = S.shuffleLayout(list);
+    const byId = new Map(list.map(p => [p.id, p]));
+    let wild = null;
+    for (const l of layout) {
+      const p = byId.get(l.id); if (!p) continue;
+      p.desk_position = l.pos;
+      if (l.wildcard) wild = p;
+    }
+    await Promise.all(list.map(save));
+    ctx.SFX.rustle();
+    paint();
+    if (wild) {
+      const node = cards.get(wild.id);
+      if (node) {
+        node.classList.add('is-wild');
+        node.append(Object.assign(el('span', 'remember t-small', 'REMEMBER THIS?'), {}));
+        node.scrollIntoView({ block: 'nearest' });
+      }
+      ctx.SFX.chime();
+    }
+  }
   drawerBtn.onclick = () => { drawerPanel.hidden = !drawerPanel.hidden; ctx.SFX.drawer(); };
+
+  autoBtn.onclick = () => {
+    autoOn = !autoOn;
+    autoBtn.setAttribute('aria-pressed', String(autoOn));
+    autoBtn.className = 'btn t-small' + (autoOn ? '' : ' is-ghost');
+    ctx.SFX.click(); drawStrings();
+  };
+
+  /* The bin is the only thing here that destroys anything, so it asks, and then it offers an undo. */
+  binBtn.onclick = () => {
+    if (!lastBinned) { ctx.toast('NOTHING IN THE BIN. DRAG NOTHING HERE YET.', 'is-ghost'); return; }
+    restoreBinned();
+  };
+
+  async function binForever(p) {
+    lastBinned = { ...p };
+    await S.del('personal', p.id);
+    recs = recs.filter(r => r.id !== p.id);
+    ctx.SFX.del(); ctx.refreshChrome(); paint();
+    binBtn.className = 'btn t-small is-primary';
+    binBtn.textContent = 'UNDO BIN';
+    clearTimeout(binTimer);
+    binTimer = setTimeout(() => {
+      lastBinned = null;
+      binBtn.className = 'btn t-small'; binBtn.textContent = 'BIN';
+    }, 15000);
+  }
+
+  async function restoreBinned() {
+    const p = lastBinned; if (!p) return;
+    lastBinned = null;
+    await S.put('personal', p);
+    recs = await S.all('personal');
+    recs = recs.filter(r => r.snapshot);
+    binBtn.className = 'btn t-small'; binBtn.textContent = 'BIN';
+    ctx.SFX.save(); ctx.toast('BACK ON THE DESK', 'is-lime'); ctx.refreshChrome(); paint();
+  }
 
   paint();
   return wrap;

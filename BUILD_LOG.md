@@ -425,3 +425,93 @@ same month give or take one. One sighting reports nothing. It never infers a pat
   `NOTHING DUE RIGHT NOW.`
 - All 12 routes rendered with **zero console errors**. Anti-slop sweep over computed styles:
   **0 violations**. Test data deleted, dev server stopped.
+
+---
+
+## 2026-11-18 — Phases 5 and 6, the Desk and the Wall
+
+The Desk and Wall existed from stage 4 but were generic: every saved thing looked the same, strings
+were hand-tied only, shuffle was random, and the Wall could hold nothing but goals. The logic that
+decides *what* happens moved into `store.js`; the pages only draw it.
+
+### The Desk
+
+**Saved things are now objects, not rows.** `paperFor()` maps type to kind and size: a hackathon is a
+polaroid with a procedural mark in its window and a handwritten caption, a job an index card with a
+teal spine and a corner clip, news a clipping with a seeded ragged edge, a scheme a torn sheet, a note
+a yellow sticky. Drag bounds and string anchor points are computed from each card's own size.
+
+**Red strings the desk ties for you.** `autoStrings()` proposes links and states the reason: same
+organisation, shared skills, same city, or deadlines within three days, strongest reason winning. It
+caps each card at three, and **your own strings claim the budget first**, so a guess can never crowd
+out a link you made. Auto strings are drawn dashed and muted, yours stay red; the AUTO STRINGS button
+turns the guesses off entirely.
+
+**Shake has a bias and a point.** `shuffleLayout()` sends anything untouched for a week to the middle,
+keeps your three most recent saves near the monitor, scatters the rest, and surfaces exactly one
+forgotten card with a `REMEMBER THIS?` badge. Deterministic under an injected `rand`, so it is tested
+rather than eyeballed.
+
+**Crumple and bin.** The x on a card crumples it into the drawer over four stepped frames. The
+drawer's DELETE FOREVER now routes through a bin that keeps the record in memory and turns the toolbar
+button into UNDO BIN for 15 seconds. Destroying something is the only action here that asks twice and
+then still offers a way back.
+
+### The Wall
+
+**All four ways in.** `+ TEXT`, `+ PHOTO` (dithered to the 16-colour palette on the way in),
+`+ PIN FROM DESK`, and `+ GOAL`. Each pin carries a zone and an optional caption, and each has UNPIN.
+
+**Zones were conflated, and that was a real bug.** The picker offered the content zones
+(HACKS/JOBS/SCHEMES/NEWS) while the code set `MOTIVATION`, so every pin saved with `zone: ""` and
+never rendered. Split into `AUTO_ZONES` (what the wall fills from what you saved) and `PIN_ZONES` (the
+spec's MOTIVATION / GOALS / MEMORIES / PINNED FROM DESK / RANDOM, from `WALL_ZONES`). The picker now
+offers only zones a pin can actually live in.
+
+**Goals go gold.** Completing a checkpoint fires a stepped light burst and stamps `done_at`. All
+checkpoints done turns the card gold permanently with `DONE — THIS STAYS HERE`, and it is never
+un-earned.
+
+**The journey box** counts days shown up, things saved, strings tied, goals hit and things pinned,
+under the line `OUTCOMES, NOT HOURS. NOTHING HERE COUNTS TIME SPENT.`
+
+**Turning round.** Desk and Wall are two walls of one room, so moving between them pans sideways in
+stepped frames instead of using the page wipe. Every other route still wipes.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        135 tests, 8 files (+18 this phase: desk.test.js)
+ audit       pass        20 modules, 11 stylesheets
+```
+
+### Browser verification
+
+- **Four paper kinds** on one desk (`k-polaroid, k-card, k-clipping, k-torn`), the polaroid carrying
+  its sprite and the clipping its ragged edge.
+- **Auto strings** drew with real reasons: `BOTH NEED NODE`, `BOTH IN RAJKOT`,
+  `DEADLINES WITHIN 3 DAYS OF EACH OTHER`. AUTO STRINGS off took them to 0 and left yours.
+- **Crumple** moved a card to `DRAWER (1)`; 5 cards became 4.
+- **Bin and undo**: DELETE FOREVER took records 5 → 4 and the toolbar read `UNDO BIN`; pressing it
+  restored 5.
+- **Shake** moved every card, and with two records aged past a week exactly **one** card came back
+  marked `REMEMBER THIS?`.
+- **Wall pins** saved with real zones (`text → MOTIVATION`, `item_ref → PINNED FROM DESK`) and
+  rendered with their captions; UNPIN removed one.
+- **Gold goal**: both checkpoints done gave `goal is-gold`, `gold: true` stored, the tag shown, and
+  every checkpoint carrying a `done_at`.
+- **Journey box** read `DAYS SHOWN UP 1 · THINGS SAVED 4 · STRINGS TIED 0 · GOALS HIT 1 · PINNED HERE 1`.
+- **Turn-around** emitted `out-l, in-l, out-r, in-r` moving between Desk and Wall, and **no** turn
+  frames when leaving the room for the Feed.
+- All 12 routes clean, **zero console errors**, anti-slop sweep **0 violations**.
+- Test data deleted, viewport reset, dev server stopped.
+
+### Deviation added this phase
+
+6. **No rotated paper.** The spec asks for slightly rotated, hand-placed items; the pixel law forbids
+   `transform: rotate()` on live DOM because it resamples and blurs the art. Resolved in favour of the
+   pixel law: each kind differs by shape, fill, edge and spine instead, so the desk still reads as
+   hand-placed objects without a single blurred pixel.

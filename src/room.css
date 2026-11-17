@@ -110,3 +110,69 @@
 .shelf-plant .lf { width:calc(4*var(--u)); background:var(--plant); border:var(--u) solid var(--ink); }
 .shelf-plant .pt2 { width:calc(14*var(--u)); height:calc(8*var(--u)); background:var(--wood-lt); border:var(--u) solid var(--ink); }
 .wall-cap { color:var(--ink-desk); background:var(--paper); display:inline-block; padding:0 calc(2*var(--u)); margin:calc(2*var(--u)) 0; }
+
+/* ---- the desk's paper kinds: a polaroid, an index card, a clipping, a sticky, a torn sheet ---- */
+.paper.k-polaroid { background:#F7F4EA; padding:calc(3*var(--u)) calc(3*var(--u)) calc(5*var(--u)); }
+.paper.k-polaroid .pframe { background:#2A2A3E; border:var(--u) solid #5A5248; padding:calc(1*var(--u)); margin-bottom:calc(2*var(--u)); display:flex; justify-content:center; }
+.paper.k-polaroid .pshot { width:calc(16*var(--u)); height:calc(16*var(--u)); display:block; }
+.paper.k-polaroid .pt { font-family:'Pixelify Sans',sans-serif; }
+
+.paper.k-card { background:var(--paper-aged); border-left:calc(3*var(--u)) solid var(--pin-teal); }
+.paper.k-card .pt { font-family:'VT323',monospace; }
+.paper.k-card::after { content:""; position:absolute; right:calc(3*var(--u)); top:calc(-2*var(--u)); width:calc(6*var(--u)); height:calc(8*var(--u)); background:#8F866F; border:var(--u) solid #5A5248; }
+
+.paper.k-clipping { background:#EDE4CC; padding-top:calc(4*var(--u)); }
+.paper.k-clipping .prag { position:absolute; left:0; right:0; top:0; height:calc(2*var(--u)); }
+.paper.k-clipping .pt { font-family:'Pixelify Sans',sans-serif; font-weight:700; }
+
+.paper.k-sticky { background:#F2E57E; border-color:#C9BE55; }
+.paper.k-sticky .pt { font-family:'Pixelify Sans',sans-serif; }
+
+.paper.k-torn { background:var(--paper); clip-path:polygon(0 0,100% 0,100% 92%,92% 100%,0 100%); }
+
+/* crumple: four stepped frames, no blur, no smooth scale */
+.paper.is-crumple { animation:crumple .22s steps(4,end) forwards; pointer-events:none; }
+@keyframes crumple { to { transform:translate3d(0,calc(8*var(--u)),0); opacity:0; } }
+:root[data-reduce="true"] .paper.is-crumple { animation:none; opacity:0; }
+
+/* the wildcard the shake surfaces */
+.paper.is-wild { outline:calc(2*var(--u)) solid var(--gold); outline-offset:calc(1*var(--u)); }
+.paper .remember { display:block; margin-top:calc(2*var(--u)); color:#8A3F33; }
+
+/* a string the desk tied for you reads differently from one you tied yourself */
+.world .auto { border-style:dashed !important; color:#5A5248 !important; }
+
+/* ---- turning round: Desk and Wall are two walls of one room ---- */
+.page[data-turn="out-r"] { animation:turn-out-r .2s steps(4,end) forwards; }
+.page[data-turn="in-r"]  { animation:turn-in-r  .2s steps(4,end) forwards; }
+.page[data-turn="out-l"] { animation:turn-out-l .2s steps(4,end) forwards; }
+.page[data-turn="in-l"]  { animation:turn-in-l  .2s steps(4,end) forwards; }
+@keyframes turn-out-r { to { transform:translate3d(calc(-40*var(--u)),0,0); } }
+@keyframes turn-in-r  { from { transform:translate3d(calc(40*var(--u)),0,0); } to { transform:translate3d(0,0,0); } }
+@keyframes turn-out-l { to { transform:translate3d(calc(40*var(--u)),0,0); } }
+@keyframes turn-in-l  { from { transform:translate3d(calc(-40*var(--u)),0,0); } to { transform:translate3d(0,0,0); } }
+
+/* ---- wall: the add bar, pinned things, gold goals, the journey box ---- */
+.addbar { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); margin-bottom:calc(4*var(--u)); }
+.addform { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; margin-bottom:calc(4*var(--u)); }
+.addform .field { min-width:calc(56*var(--u)); }
+
+.pin-card .polaroid-shot { display:block; width:calc(40*var(--u)); image-rendering:pixelated; }
+.pin-card .pcap { display:block; color:#5A5248; }
+.pin-text .pn { display:block; }
+.pin-photo, .pin-item { display:block; }
+.pin-card .btn { margin-top:calc(2*var(--u)); }
+
+.goal.is-gold { border-color:var(--pin-gold); background:#FFF6D8; }
+.goal .gold-tag { display:block; color:#8A6A00; margin-bottom:calc(2*var(--u)); }
+.cp .burst { position:absolute; width:calc(9*var(--u)); height:calc(9*var(--u)); margin-left:calc(-1*var(--u));
+  background:var(--gold); animation:burst .4s steps(4,end) forwards; pointer-events:none; }
+@keyframes burst { to { transform:scale(2); opacity:0; } }
+.cp { position:relative; }
+
+.journey { margin-top:calc(5*var(--u)); background:var(--paper); color:var(--ink-desk);
+  border:calc(2*var(--u)) solid #5A5248; padding:calc(3*var(--u)); display:grid; gap:calc(1*var(--u)); width:calc(100*var(--u)); }
+.journey h3 { margin:0 0 calc(2*var(--u)); }
+.jrow { display:flex; justify-content:space-between; gap:calc(4*var(--u)); }
+.jrow b { font-weight:400; color:#8A6A00; }
+.jnote { color:#5A5248; margin:calc(2*var(--u)) 0 0; }
