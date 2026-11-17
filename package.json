@@ -12,7 +12,8 @@
     "test": "vitest run",
     "audit": "node tools/audit.mjs",
     "verify": "node tools/verify.mjs",
-    "scrape": "node scrapers/run.mjs"
+    "scrape": "node scrapers/run.mjs",
+    "check-source": "node tools/check-source.mjs"
   },
   "devDependencies": {
     "@eslint/js": "9.17.0",

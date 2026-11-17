@@ -789,3 +789,38 @@ its 900 × 560 minimum, so on a phone it still shows RESIZE THE WINDOW. A real p
 portrait layout set, touch targets and a touch gesture model — a sizeable piece of work that
 contradicts the current design law, and not something to fake with a media query. Flagged for the
 user rather than quietly half-done.
+
+---
+
+## 2026-11-18 — Desktop only, decided
+
+A phone layout was built and then **removed at the user's request**: this is a desktop app, and that
+is now a decision rather than a gap. The work is on `git stash` as *"phone layout (rejected: desktop
+only)"* if it is ever wanted; nothing of it is in the tree.
+
+What it had reached before it went, recorded because two of the findings are worth keeping:
+
+- A phone layout set with a bottom bar of the three places, swipe between them, device shake, and
+  the Desk as a list, since a drag-and-drop pin board on a 375 px screen is a worse list, not a
+  smaller desk.
+- **Finding 1, from a test:** a short side under 560 px is the wrong test for "is this a phone" — a
+  1200 × 559 laptop window matched it. Narrow-when-upright or short-when-sideways is the right rule.
+- **Finding 2, from the browser:** the app passes the user's *stored* density, so a phone kept
+  CHUNKY and got u = 2 px with 36 px targets, under the 44 px thumb minimum. Two attempts to fix it
+  by changing the phone density were both wrong: inflating u to make targets big left only 83u
+  across, so 16u body text filled a quarter of the screen. The right split is more u across for the
+  type scale, plus a published `--touch` (how many whole u make 44 CSS px at this u) for the targets,
+  because the CSS cannot compute that and the u engine is the only thing allowed to.
+
+Kept from the same stretch of work, because it is not phone-related:
+
+**`tools/check-source.mjs`** — `npm run check-source -- <url> [type]`. It reads robots.txt, says
+whether that exact path is permitted and what Crawl-delay is asked for, looks for a feed the
+publisher advertises, and then either prints the `sources.json` entry to paste or refuses and says
+why. It will not help with an HTML-only page, because there is no HTML scraper in this project.
+It states plainly that it cannot read terms of use, which remains the user's job.
+
+Proved against a local fixture server rather than by probing anyone's site: a permitted feed printed
+the entry and reported the 2 s Crawl-delay; a disallowed path was refused with
+`REFUSED — robots.txt disallows /blocked` and nothing beyond robots.txt was fetched; an HTML page
+that advertises a feed was redirected to the feed.
