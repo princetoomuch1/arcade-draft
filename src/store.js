@@ -3,13 +3,13 @@
    Field names follow src/model.js. Version 2 migrates the version 1 camelCase records in place. */
 
 import {
-  blankItemRecord, blankInterest, blankPlan, uid,
+  blankItemRecord, blankInterest, blankPlan, blankApplication, uid,
   expiresAt as itemExpiresAt, receipt
 } from './model.js';
 
 export { uid, receipt };
 
-const DB = 'arcade', VER = 2;
+const DB = 'arcade', VER = 3;
 const STORES = ['items', 'personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans', 'refresh'];
 
 /* ---------- migration ---------- */
@@ -51,6 +51,43 @@ export function migrateWeight(old) {
   });
 }
 
+/** Two older application shapes existed before the model settled. Both convert to Application. */
+export function migrateApplication(old) {
+  if (old.stage && Array.isArray(old.dates) && 'next_action' in old) return old;   // already current
+
+  const notes = [];
+  // shape A, written by the Jobs page: { id: <item id>, item, stage:'APPLIED', label:'MANUAL', appliedAt }
+  if (old.item && old.label) {
+    const at = old.appliedAt ?? Date.now();
+    return blankApplication({
+      id: 'a-' + old.id, item_id: old.id,
+      title: old.item.title || '', org: old.item.org || '', url: old.item.url || null,
+      stage: 'applied', dates: [{ stage: 'applied', at }],
+      trust: String(old.label).toLowerCase() === 'external' ? 'external' : 'manual',
+      updated: at
+    });
+  }
+  // shape B, written by the Applications page: { itemId, title, org, url, status, appliedOn, note }
+  const STAGE = {
+    PLANNED: 'planned', APPLIED: 'applied', SCREEN: 'screen',
+    INTERVIEW: 'interview', OFFER: 'offer', REJECTED: 'reject'
+  };
+  let stage = STAGE[old.status] || 'planned';
+  if (old.status === 'GHOSTED') {
+    // "Ghosted" is an absence, not a decision anyone made, so it is derived from the dates now.
+    stage = 'applied';
+    notes.push('Was marked GHOSTED before stages changed; no reply is now worked out from the dates.');
+  }
+  const at = old.appliedOn ? new Date(old.appliedOn + 'T12:00:00').getTime() : null;
+  return blankApplication({
+    id: old.id, item_id: old.itemId ?? null,
+    title: old.title || '', org: old.org || '', url: old.url || null,
+    stage, dates: at ? [{ stage: 'applied', at }] : [],
+    notes: [old.note, ...notes].filter(Boolean).join('\n'),
+    trust: 'manual', updated: old.updated ?? Date.now()
+  });
+}
+
 let db = null;
 export function open() {
   if (db) return Promise.resolve(db);
@@ -63,14 +100,25 @@ export function open() {
         rewrite(tx.objectStore('personal'), migratePersonal);
         rewrite(tx.objectStore('weights'), migrateWeight);
       }
+      if (ev.oldVersion >= 1 && ev.oldVersion < 3 && tx) {
+        rewrite(tx.objectStore('apps'), migrateApplication);
+      }
     };
     r.onsuccess = () => { db = r.result; res(db); };
     r.onerror = () => rej(r.error);
   });
 }
+/** Rewrite every record in place. A migration that changes the key re-keys the record instead,
+ *  because cursor.update() refuses to move a record to a new primary key. */
 function rewrite(store, fn) {
   const q = store.openCursor();
-  q.onsuccess = () => { const c = q.result; if (!c) return; c.update(fn(c.value)); c.continue(); };
+  q.onsuccess = () => {
+    const c = q.result; if (!c) return;
+    const next = fn(c.value);
+    if (next.id === c.value.id) c.update(next);
+    else { c.delete(); store.put(next); }
+    c.continue();
+  };
 }
 
 const tx = (store, mode = 'readonly') => open().then(d => d.transaction(store, mode).objectStore(store));
@@ -229,6 +277,58 @@ export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) 
     }
     return true;
   });
+}
+
+/* ---------- applications ----------
+   Trust is the whole point of this store, so it is never inferred and never upgraded by us:
+     manual    you logged it here. All we know is that you said so.
+     external  you applied on the other site. We cannot see the other site.
+     platform  a platform confirmed delivery. Nothing here can set this, because nothing here is
+               connected to a platform. If it ever appears, it came from a real confirmation.
+   Nothing in this app may say an employer received anything. */
+export const STAGE_ORDER = ['planned', 'applied', 'screen', 'interview', 'offer', 'reject'];
+export const TRUST_WORDS = {
+  manual: 'You logged this yourself. Nothing was sent from here.',
+  external: 'You applied on the other site. This app cannot confirm what happened there.',
+  platform: 'Confirmed by the platform that received it.'
+};
+
+/**
+ * Start tracking an application. `trust` may only be manual or external: see above.
+ * @param {Partial<import('./model.js').FeedItem>|null} item
+ * @param {Partial<import('./model.js').Application> & {trust?: string, stage?: string}} [opts]
+ */
+export async function logApplication(item, { trust = 'manual', stage = 'planned', ...rest } = {}) {
+  const t = trust === 'external' ? 'external' : 'manual';
+  const app = blankApplication({
+    item_id: item?.id ?? null,
+    title: item?.title ?? rest.title ?? '',
+    org: item?.org ?? rest.org ?? '',
+    url: item?.url ?? rest.url ?? null,
+    stage, trust: t,
+    dates: stage === 'planned' ? [] : [{ stage, at: Date.now() }],
+    ...rest
+  });
+  await put('apps', app);
+  return app;
+}
+
+/** Move an application to a new stage, keeping the history. Trust never changes here. */
+export async function setStage(app, stage, now = Date.now()) {
+  if (!STAGE_ORDER.includes(stage) || app.stage === stage) return app;
+  app.stage = stage;
+  app.dates = [...(app.dates || []), { stage, at: now }];
+  app.updated = now;
+  await put('apps', app);
+  return app;
+}
+
+/** Days since the last thing that actually happened. Null when nothing has happened yet.
+ *  This is how "no reply" is worked out: an absence, computed, never a stage someone chose. */
+export function daysSilent(app, now = Date.now()) {
+  const last = (app.dates || []).reduce((m, d) => Math.max(m, d.at || 0), 0);
+  if (!last || ['offer', 'reject'].includes(app.stage)) return null;
+  return Math.floor((now - last) / 864e5);
 }
 
 /* ---------- deadline plans: official date is locked, the rest is yours ---------- */

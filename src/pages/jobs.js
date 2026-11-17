@@ -1,7 +1,7 @@
 /* JOBS — "Character Select", Compare, and the job detail page. UI Spec v2 section 10.
    There is no overall score anywhere: three honest counts and a tap to read each criterion. */
 
-import { mark, bump, STATE, put, get } from '../store.js';
+import { mark, bump, STATE, put, get, logApplication } from '../store.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
 
@@ -90,7 +90,7 @@ function freshDot(item) {
 }
 
 const payTag = item => {
-  if (!item.pay) return ['MISSING', 'missing', 'The listing does not state pay.'];
+  if (!item.pay) return ['NOT STATED', 'missing', 'The listing does not state pay.'];
   if (item.pay.disclosed) {
     const lpa = item.pay.period === 'year' ? item.pay.amount / 1e5 : item.pay.amount * 12 / 1e5;
     return [`₹${lpa.toFixed(1)} LPA`, 'disclosed', 'Stated in the listing.'];
@@ -445,10 +445,10 @@ export async function render(ctx) {
     apply.style.textDecoration = 'none';
     apply.onclick = () => { setTimeout(askDidYouApply, 400); };
     const track = el('button', 'btn t-small', 'TRACK');
-    track.title = 'Adds a slot to Applications, labelled MANUAL';
+    track.title = 'Adds a slot to Applications, labelled MANUAL. Nothing is sent from here.';
     track.onclick = async () => {
-      await put('apps', { id: item.id, item, stage: 'APPLIED', label: 'MANUAL', appliedAt: Date.now(), events: [] });
-      ctx.SFX.levelUp(); ctx.toast('TRACKED AS MANUAL', 'is-lime');
+      await logApplication(item, { trust: 'manual', stage: 'planned' });
+      ctx.SFX.levelUp(); ctx.toast('TRACKING AS MANUAL — NOTHING WAS SENT', 'is-lime');
     };
     const share = el('button', 'btn t-small is-ghost', 'SHARE');
     share.onclick = async () => {
@@ -467,8 +467,8 @@ export async function render(ctx) {
       q.append(el('span', 't-small', 'DID YOU APPLY?'));
       const yes = el('button', 'btn t-small', 'YES, LOG IT');
       yes.onclick = async () => {
-        await put('apps', { id: item.id, item, stage: 'APPLIED', label: 'EXTERNAL', appliedAt: Date.now(), events: [] });
-        ctx.SFX.levelUp(); ctx.toast('LOGGED AS EXTERNAL', 'is-lime'); q.remove();
+        await logApplication(item, { trust: 'external', stage: 'applied' });
+        ctx.SFX.levelUp(); ctx.toast('LOGGED AS EXTERNAL — WE CANNOT CONFIRM IT ARRIVED', 'is-lime'); q.remove();
       };
       const no = el('button', 'btn t-small is-ghost', 'NOT YET');
       no.onclick = () => q.remove();
@@ -529,8 +529,8 @@ export async function render(ctx) {
     both.onclick = async () => { for (const it of [a, b]) { await mark(it, STATE.SAVED); ctx.coins++; } ctx.refreshChrome(); ctx.SFX.save(); both.textContent = 'SAVED BOTH'; };
     const trackBoth = el('button', 'btn t-small', 'TRACK BOTH');
     trackBoth.onclick = async () => {
-      for (const it of [a, b]) await put('apps', { id: it.id, item: it, stage:'APPLIED', label:'MANUAL', appliedAt: Date.now(), events: [] });
-      ctx.SFX.levelUp(); ctx.toast('BOTH TRACKED AS MANUAL', 'is-lime');
+      for (const it of [a, b]) await logApplication(it, { trust: 'manual', stage: 'planned' });
+      ctx.SFX.levelUp(); ctx.toast('BOTH TRACKING AS MANUAL — NOTHING WAS SENT', 'is-lime');
     };
     btns.append(both, trackBoth);
     box.append(note, btns);

@@ -1,0 +1,49 @@
+/* Applications: the save-file screen. Integer u, no radius, no gradient, no blur. */
+
+.creed { color:var(--muted); max-width:calc(220*var(--u)); margin:0 0 calc(5*var(--u)); }
+
+.slot-form { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; margin-bottom:calc(5*var(--u)); }
+.tally .quiet { color:var(--orange); }
+
+/* one slot = one save file */
+.slot {
+  position:relative; background:var(--surface); padding:calc(4*var(--u));
+  padding-left:calc(24*var(--u)); margin-bottom:calc(4*var(--u));
+  max-width:calc(232*var(--u)); display:grid; gap:calc(3*var(--u));
+}
+.slot-sprite { position:absolute; left:calc(4*var(--u)); top:calc(4*var(--u)); }
+
+.slot-head { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:baseline; }
+.slot-head .role { color:var(--text); }
+.slot-head a.role { color:var(--cyan); }
+.slot-head .co { color:var(--muted); }
+
+/* the trust label carries meaning, so each value looks different, not just differently worded */
+.trust { margin-left:auto; padding:0 calc(2*var(--u)); border:var(--u) solid var(--edge); color:var(--muted); }
+.trust.tr-manual   { color:var(--gold);  border-color:var(--gold); }
+.trust.tr-external { color:var(--orange); border-color:var(--orange); }
+.trust.tr-platform { color:var(--lime);  border-color:var(--lime); }
+
+/* stage rail: every stage shown, the reached ones filled */
+.rail { display:flex; flex-wrap:wrap; gap:calc(1*var(--u)); }
+.pip {
+  padding:calc(1*var(--u)) calc(3*var(--u)); cursor:pointer;
+  background:var(--bg); color:var(--muted); border:var(--u) solid var(--surface-hi);
+}
+.pip.on { color:var(--text); border-color:var(--edge); background:var(--surface-hi); }
+.pip.now { color:var(--ink); background:var(--cyan); border-color:var(--cyan); }
+.pip:hover { color:var(--text); border-color:var(--cyan); }
+.pip:focus-visible { outline:calc(2*var(--u)) solid var(--gold); outline-offset:0; }
+
+.hist { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); color:var(--muted); }
+.hist .quiet { color:var(--orange); }
+
+.next { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
+.next > .t-small { color:var(--muted); }
+.next .field { min-width:calc(72*var(--u)); }
+
+.mats { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); align-items:center; }
+.mats > span:first-child { color:var(--muted); }
+
+.slot textarea.field { min-height:calc(24*var(--u)); }
+.slot-foot { display:flex; justify-content:space-between; align-items:center; gap:calc(4*var(--u)); color:var(--muted); }

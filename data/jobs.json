@@ -154,7 +154,10 @@
    "org": "Retail chain",
    "summary": null,
    "cluster": null,
-   "pay": null,
+   "pay": {
+    "disclosed": false,
+    "note": "The listing says 'competitive'. Not a number, so not a figure we will print."
+   },
    "workClass": "mainstream",
    "startDate": null,
    "endDate": null,

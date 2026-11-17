@@ -203,3 +203,76 @@ Every acceptance criterion, checked by driving the real page.
 
 4. **`shift+F` for fullscreen**, not `F`. `F` is FEED in the shipped keybar, same reasoning as `H`.
    The bezel prints `[SHIFT+F] FULL` so the real key is never a guess.
+
+---
+
+## 2026-11-18 — Phase 2, Jobs + Applications
+
+**Starting point.** Jobs was already built: four class tabs, the MUST/NICE filter model, the MAT/GAP/UNK
+fit snapshot, and a VS compare screen. Applications was the thin stage-5 table. The real finding was
+that **three incompatible record shapes were being written to the same `apps` store** — one by Jobs
+(`{id: <item id>, item, label}`), one by the Applications page (`{itemId, status, appliedOn}`), and a
+third defined in `model.js` that nothing used.
+
+### Tasks
+
+**1. One shape, and a migration to it.** Database version 3. `migrateApplication()` converts both
+legacy shapes to the model's `Application`. The Jobs shape was keyed by the *item* id, so migrating it
+changes the primary key; `rewrite()` now re-keys (delete + put) instead of calling `cursor.update()`,
+which refuses to move a record.
+
+**2. Trust is now enforced in the store, not in the UI.** `logApplication()` accepts only `manual` or
+`external` and silently downgrades anything else, so no code path can mark an application
+`platform`-confirmed. `TRUST_WORDS` carries the plain-language meaning into tooltips. `setStage()`
+appends to the date history and never touches trust.
+
+**3. "Ghosted" is derived, not declared.** The old GHOSTED status was a stage someone had to choose.
+`daysSilent()` computes it from the last real date instead, and returns null once there is an answer.
+Migrated GHOSTED rows become `applied` with a note saying so, so nothing is lost silently.
+
+**4. Applications rewritten as a save-file screen.** One slot per application: procedural company
+sprite, trust label, a stage rail showing all six stages with the reached ones filled, the real date
+history, next action + date, materials toggles, notes, and an OPEN/ALL/CLOSED filter. A standing line
+at the top: `NOTHING HERE APPLIES FOR YOU, AND NOTHING IS SENT FROM THIS APP.`
+
+**5. Jobs writes through the store helpers.** TRACK, the did-you-apply prompt and TRACK BOTH all call
+`logApplication`. Their toasts now say what is and is not known: `TRACKING AS MANUAL — NOTHING WAS
+SENT`, `LOGGED AS EXTERNAL — WE CANNOT CONFIRM IT ARRIVED`.
+
+**6. Seed data.** No seed job had undisclosed pay, so the `ESTIMATED` label was unreachable and
+therefore untestable. Gave `seed-016` `pay: {disclosed: false}`. Also changed payTag's missing case
+from `MISSING` to `NOT STATED`, matching every other row in the compare table.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        91 tests, 6 files (+17 this phase: apps.test.js)
+ audit       pass        20 modules, 9 stylesheets
+```
+
+### Browser verification
+
+- **Migration proved against a real v2 database** holding both legacy shapes. Database came back at
+  version 3. The Jobs-shaped record re-keyed `seed-003` → `a-seed-003` keeping `item_id: seed-003`,
+  stage `applied`, trust `external`. The page-shaped record kept its notes (`spoke to Priya`) and
+  stage `interview`. The GHOSTED one became `applied` with the explanation in its notes.
+- **Stage rail.** Advancing Backend Intern to SCREEN gave history `APPLIED 1 SEPT 2026 | SCREEN 18 NOV
+  2026`, dates `['applied','screen']`, and **trust stayed `external`**.
+- **No reply is derived.** Tally read `APPLIED 2 | INTERVIEW 1 | NO REPLY 14D+ 3`, computed from dates.
+- **Materials** toggle persisted (`['CV']`).
+- **Nothing claims delivery.** A regex sweep for "received / delivered / sent to / employer has" over
+  the rendered page found nothing, and `PLATFORM` appears nowhere in the UI.
+- **Filters narrow correctly, as designed.** My first test wrongly expected NICE to hide. It does not,
+  by design. With MODE=REMOTE on the MAINSTREAM tab (all three listings are `in_person`): NICE kept 3,
+  switching to MUST showed 0 and reported `3 HIDDEN`, adding ONSITE restored 3, RESET restored 3.
+- **Compare** showed all nine rows, each value tagged, and all three tags now reachable:
+  `DISCLOSED, ESTIMATED, MISSING`. Footer: "No winner, no total, no crown."
+- Zero console errors throughout. Test data deleted, dev server stopped.
+
+### Deviation added this phase
+
+5. **Stages are the spec's five plus `planned`.** `ghosted` is deliberately not a stage: it is an
+   absence, so it is computed from the dates rather than being something anyone declares.
