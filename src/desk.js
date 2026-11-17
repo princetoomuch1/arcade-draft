@@ -93,7 +93,7 @@ export async function render(ctx) {
   const cards = new Map();
   let stringMode = false, firstPick = null;
 
-  const posOf = (p, i) => p.deskPos || { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 };
+  const posOf = (p, i) => p.desk_position || { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 };
 
   function setPos(node, pos) {
     node.style.left = `calc(${pos.x}*var(--u))`; node.style.top = `calc(${pos.y}*var(--u))`;
@@ -110,26 +110,26 @@ export async function render(ctx) {
     const toss = el('button', 'tosser t-small', 'x'); toss.title = 'Put in the drawer (14 days to change your mind)';
     toss.onpointerdown = e => e.stopPropagation();
     toss.onclick = async e => {
-      e.stopPropagation(); p.state = S.STATE.DRAWER; p.drawerAt = Date.now();
+      e.stopPropagation(); p.state = S.STATE.DRAWER; p.drawer_at = Date.now();
       await save(p); ctx.SFX.drawer(); ctx.refreshChrome(); paint();
     };
     c.append(toss);
-    const pos = posOf(p, i); p.deskPos = pos; setPos(c, pos);
+    const pos = posOf(p, i); p.desk_position = pos; setPos(c, pos);
     cards.set(p.id, c);
 
     /* mouse drag, snapped to whole u on every move */
     c.onpointerdown = e => {
       if (e.button !== 0) return;
       if (stringMode) { e.preventDefault(); return pickForString(p, c); }
-      const start = { px: e.clientX, py: e.clientY, x: p.deskPos.x, y: p.deskPos.y };
+      const start = { px: e.clientX, py: e.clientY, x: p.desk_position.x, y: p.desk_position.y };
       let moved = false;
       c.setPointerCapture(e.pointerId); c.classList.add('is-drag', 'sh-drag'); ctx.SFX.pin();
       const move = ev => {
         const u = uCss();
         const nx = clamp(S_snap(start.x + (ev.clientX - start.px) / u), 0, W - CW);
         const ny = clamp(S_snap(start.y + (ev.clientY - start.py) / u), 0, H - CH);
-        if (nx !== p.deskPos.x || ny !== p.deskPos.y) moved = true;
-        p.deskPos = { x: nx, y: ny }; setPos(c, p.deskPos); drawStrings();
+        if (nx !== p.desk_position.x || ny !== p.desk_position.y) moved = true;
+        p.desk_position = { x: nx, y: ny }; setPos(c, p.desk_position); drawStrings();
       };
       const up = async () => {
         c.removeEventListener('pointermove', move); c.removeEventListener('pointerup', up);
@@ -155,8 +155,8 @@ export async function render(ctx) {
       const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      p.deskPos = { x: clamp(p.deskPos.x + d[0], 0, W - CW), y: clamp(p.deskPos.y + d[1], 0, H - CH) };
-      setPos(c, p.deskPos); drawStrings();
+      p.desk_position = { x: clamp(p.desk_position.x + d[0], 0, W - CW), y: clamp(p.desk_position.y + d[1], 0, H - CH) };
+      setPos(c, p.desk_position); drawStrings();
     };
     return c;
   }
@@ -182,11 +182,12 @@ export async function render(ctx) {
     for (const a of byId.values()) for (const bid of a.strings || []) {
       const b = byId.get(bid); if (!b) continue;
       const key = [a.id, b.id].sort().join('|'); if (seen.has(key)) continue; seen.add(key);
-      const ax = a.deskPos.x + CW / 2, ay = a.deskPos.y + CH / 2, bx = b.deskPos.x + CW / 2, by = b.deskPos.y + CH / 2;
+      const ax = a.desk_position.x + CW / 2, ay = a.desk_position.y + CH / 2, bx = b.desk_position.x + CW / 2, by = b.desk_position.y + CH / 2;
       for (const [w, col] of [[3, '#2A0810'], [1, '#C41E3A']]) {
         const l = document.createElementNS(svgNS, 'line');
-        l.setAttribute('x1', ax); l.setAttribute('y1', ay); l.setAttribute('x2', bx); l.setAttribute('y2', by);
-        l.setAttribute('stroke', col); l.setAttribute('stroke-width', w); svg.append(l);
+        l.setAttribute('x1', String(ax)); l.setAttribute('y1', String(ay));
+        l.setAttribute('x2', String(bx)); l.setAttribute('y2', String(by));
+        l.setAttribute('stroke', String(col)); l.setAttribute('stroke-width', String(w)); svg.append(l);
       }
       const A = kw(a), B = kw(b); const shared = [...A].filter(x => B.has(x));
       const union = new Set([...A, ...B]).size || 1;
@@ -224,7 +225,7 @@ export async function render(ctx) {
       const row = el('div', 'drawer-row');
       row.append(el('span', 'nm', p.snapshot.title), el('span', 't-small', `${S.drawerDaysLeft(p)}D LEFT`));
       const back = el('button', 'btn t-small', 'RESTORE');
-      back.onclick = async () => { p.state = S.STATE.SAVED; p.drawerAt = null; await save(p); ctx.SFX.drawer(); ctx.refreshChrome(); paint(); };
+      back.onclick = async () => { p.state = S.STATE.SAVED; p.drawer_at = null; await save(p); ctx.SFX.drawer(); ctx.refreshChrome(); paint(); };
       const gone = el('button', 'btn is-ghost t-small', 'DELETE FOREVER');
       gone.onclick = async () => {
         if (gone.dataset.armed !== '1') { gone.dataset.armed = '1'; gone.textContent = 'SURE?'; return; }
@@ -245,7 +246,7 @@ export async function render(ctx) {
   };
   shuffleBtn.onclick = async () => {
     const list = live().sort(() => Math.random() - 0.5);
-    list.forEach((p, i) => { p.deskPos = { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 }; });
+    list.forEach((p, i) => { p.desk_position = { x: 8 + (i % 9) * 60, y: 140 + Math.floor(i / 9) * 44 }; });
     await Promise.all(list.map(save)); ctx.SFX.rustle(); paint();
   };
   drawerBtn.onclick = () => { drawerPanel.hidden = !drawerPanel.hidden; ctx.SFX.drawer(); };

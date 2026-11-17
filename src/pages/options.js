@@ -43,6 +43,7 @@ export async function render(ctx) {
     row.append(r); return row;
   };
 
+  /** @type {[string, () => (Node|HTMLElement)[]][]} */
   const sections = [
     ['VIDEO', () => {
       const b = el('div');
@@ -67,7 +68,7 @@ export async function render(ctx) {
       const host = el('div');
       const draw = async () => {
         host.innerHTML = '';
-        const ws = (await S.all('weights')).sort((a, b) => b.w - a.w);
+        const ws = (await S.all('weights')).sort((a, b) => b.weight - a.weight);
         const addRow = el('div', 'form-row');
         const inp = el('input', 'field'); inp.placeholder = 'add an interest';
         const add = el('button', 'btn is-primary t-small', 'ADD');
@@ -76,10 +77,15 @@ export async function render(ctx) {
         addRow.append(inp, add); host.append(addRow);
         if (!ws.length) { host.append(el('p', 't-small', 'Empty. Save or add things and it fills in.')); return; }
         for (const w of ws.slice(0, 40)) {
-          const r = el('div', 'interest' + (w.kind === 'CHOSE' ? ' is-chose' : '') + (w.muted ? ' is-muted' : ''));
-          const bar = el('div', 'w'); const i = el('i'); i.style.width = `${Math.round(w.w * 100)}%`; bar.append(i);
-          r.append(el('span', 't-body', w.id), bar, el('span', 't-small', w.kind));
-          if (!w.muted) { const m = el('button', 'btn is-ghost t-small', 'MUTE'); m.onclick = async () => { await S.muteTopic(w.id); ctx.weights = await S.weightMap(); draw(); }; r.append(m); }
+          const r = el('div', 'interest' + (w.kind === 'explicit' ? ' is-chose' : '') + (w.paused ? ' is-muted' : ''));
+          const bar = el('div', 'w'); const i = el('i'); i.style.width = `${Math.round(w.weight * 100)}%`; bar.append(i);
+          r.append(el('span', 't-body', w.label || w.id), bar, el('span', 't-small', w.kind.toUpperCase()));
+          const m = el('button', 'btn is-ghost t-small', w.paused ? 'RESUME' : 'PAUSE');
+          m.onclick = async () => {
+            w.paused ? await S.resumeTopic(w.id) : await S.muteTopic(w.id);
+            ctx.weights = await S.weightMap(); ctx.SFX.click(); draw();
+          };
+          r.append(m);
           const x = el('button', 'btn is-ghost t-small', 'FORGET');
           x.onclick = async () => { await S.del('weights', w.id); ctx.weights = await S.weightMap(); ctx.SFX.del(); draw(); };
           r.append(x); host.append(r);

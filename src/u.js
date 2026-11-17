@@ -50,8 +50,8 @@ export function metrics(density = defaultDensity(), w = innerWidth, h = innerHei
 export function apply(density, root = document.documentElement) {
   const m = metrics(density);
   root.style.setProperty('--u', m.uCss + 'px');
-  root.style.setProperty('--cw', m.canvasU.w);
-  root.style.setProperty('--ch', m.canvasU.h);
+  root.style.setProperty('--cw', String(m.canvasU.w));
+  root.style.setProperty('--ch', String(m.canvasU.h));
   root.dataset.orientation = 'landscape';            // never portrait
   root.dataset.tooSmall = String(m.tooSmall);
   root.dataset.density = m.density;

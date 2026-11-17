@@ -1,0 +1,41 @@
+name: daily scrape
+
+on:
+  schedule:
+    # 01:30 UTC = 07:00 IST. Off-peak for the sites being read.
+    - cron: '30 1 * * *'
+  workflow_dispatch:        # the REFRESH ALL button in the app triggers this
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: Scrape into data/
+        run: npm run scrape
+        continue-on-error: true      # one dead source must not stop the rest
+
+      - name: Commit any changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "no data changes"
+          else
+            git commit -m "data: daily scrape $(date -u +%Y-%m-%d)"
+            git push
+          fi

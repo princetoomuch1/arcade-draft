@@ -13,7 +13,8 @@ const PRIORITY = { save:5, levelup:5, delete:4, chime:4 };   // everything else 
 /** Browsers require a user gesture. Call from the first click or keypress. */
 export function init() {
   if (ctx) return ctx;
-  ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  const AC = window.AudioContext || /** @type {any} */ (window).webkitAudioContext;
+  ctx = new AC({ latencyHint: 'interactive' });
   comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -12; comp.ratio.value = 12;
   comp.attack.value = 0.003;   comp.release.value = 0.25;
@@ -45,6 +46,10 @@ function claim(name) {
 function voice(ms) { live++; setTimeout(() => live--, ms + 40); }
 
 /* ---- primitives ---- */
+/**
+ * @param {{type?: OscillatorType, from: number, to?: number, dur: number,
+ *          gain?: number, at?: number, decay?: boolean}} opts
+ */
 function tone({ type = 'square', from, to, dur, gain = 0.1, at = 0, decay = false }) {
   const t = ctx.currentTime + at / 1000, o = ctx.createOscillator(), g = ctx.createGain();
   o.type = type;
@@ -56,6 +61,10 @@ function tone({ type = 'square', from, to, dur, gain = 0.1, at = 0, decay = fals
   o.connect(g).connect(comp);
   o.start(t); o.stop(t + dur / 1000 + 0.02);
 }
+/**
+ * @param {{dur: number, gain?: number, at?: number, filter?: BiquadFilterType, freq?: number,
+ *          q?: number, sweepTo?: number|null, fade?: 'in'|'bell'|null}} opts
+ */
 function noise({ dur, gain = 0.06, at = 0, filter = 'lowpass', freq = 2000, q = 1, sweepTo = null, fade = null }) {
   const t = ctx.currentTime + at / 1000;
   const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true;

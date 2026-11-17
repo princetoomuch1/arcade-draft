@@ -1,0 +1,30 @@
+{
+  "name": "career-arcade",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal career workspace: hackathons, AI news, IT/AI schemes, jobs, internships and project notes, as a room with a Computer, a Desk and a Wall. Static, free, no server.",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "build": "node tools/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "audit": "node tools/audit.mjs",
+    "verify": "node tools/verify.mjs",
+    "scrape": "node scrapers/run.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "9.17.0",
+    "fake-indexeddb": "6.0.0",
+    "globals": "15.14.0",
+    "jsdom": "25.0.1",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

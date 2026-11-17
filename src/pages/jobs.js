@@ -1,7 +1,7 @@
 /* JOBS — "Character Select", Compare, and the job detail page. UI Spec v2 section 10.
    There is no overall score anywhere: three honest counts and a tap to read each criterion. */
 
-import { mark, bump, STATE, personalFor, put, get } from '../store.js';
+import { mark, bump, STATE, put, get } from '../store.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
 
@@ -10,6 +10,7 @@ export const keys = [['1-4','CLASS'],['C','COMPARE'],['A','MY APPS'],['ENTER','V
 
 const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c; if (x != null) n.textContent = x; return n; };
 
+/** @type {[string, string, number, string][]} */
 const CLASSES = [
   ['mainstream', 'MAINSTREAM', 70, 'var(--cyan)'],
   ['startup',    'STARTUP',    52, 'var(--pink)'],
@@ -70,7 +71,7 @@ function test(item, f) {
 
 /* ---- 10.3 the three counts. Each is a number of criteria, never a percentage. ---- */
 function counts(item, weights, gaps) {
-  const mine = Object.entries(weights).filter(([, w]) => !w.muted && w.w > 0.3).map(([k]) => k);
+  const mine = Object.entries(weights).filter(([, w]) => !w.paused && w.weight > 0.3).map(([k]) => k);
   const skills = (item.skills || []).map(s => s.toLowerCase());
   const mat = [], gap = [...gaps], unk = [];
 
@@ -304,7 +305,8 @@ export async function render(ctx) {
     const co = el('p', 'co t-small', '@ ' + String(item.org || 'UNKNOWN').toUpperCase());
 
     const bars = el('div', 'bars');
-    for (const [k, lab, listed] of [['mat', 'MAT', c.mat], ['gap', 'GAP', c.gap], ['unk', 'UNK', c.unk]]) {
+    for (const [k, lab, listed] of /** @type {[string, string, string[]][]} */ (
+      [['mat', 'MAT', c.mat], ['gap', 'GAP', c.gap], ['unk', 'UNK', c.unk]])) {
       const b = el('div', `fbar ${k}`);
       const segs = el('div', 'segs');
       for (let s = 0; s < 6; s++) { const si = el('i'); if (s < listed.length) si.classList.add('on'); segs.append(si); }
@@ -315,7 +317,7 @@ export async function render(ctx) {
 
     const foot = el('div', 'foot');
     const dot = el('span', 'fdot ' + freshDot(item));
-    dot.title = `Last checked ${Math.round((Date.now() - new Date(item.lastSeen)) / 36e5)}h ago`;
+    dot.title = `Last checked ${Math.round((Date.now() - new Date(item.lastSeen).getTime()) / 36e5)}h ago`;
     const viewB = el('button', 'btn t-small', 'VIEW');
     viewB.style.width = 'calc(40*var(--u))';
     viewB.onclick = ev => { ev.stopPropagation(); openDetail(item); };
@@ -404,7 +406,7 @@ export async function render(ctx) {
     const r = el('div'); r.style.marginTop = 'calc(4*var(--u))';
     r.append(el('h2', 't-label', 'RECEIPT'));
     for (const [k, v] of [
-      ['LAST CHECKED', `${Math.round((Date.now() - new Date(item.lastSeen)) / 36e5)}H AGO`],
+      ['LAST CHECKED', `${Math.round((Date.now() - new Date(item.lastSeen).getTime()) / 36e5)}H AGO`],
       ['LISTED', new Date(item.firstSeen).toLocaleDateString('en-IN')],
       ['SOURCE', `${String(item.source?.name).toUpperCase()} · ${item.source?.host}`]
     ]) {
@@ -416,7 +418,7 @@ export async function render(ctx) {
     const flags = [];
     if (!item.pay?.disclosed) flags.push('pay is not stated');
     if (!item.org) flags.push('no company name in the listing');
-    if ((Date.now() - new Date(item.firstSeen)) / 864e5 > 60) flags.push('posting is older than 60 days');
+    if ((Date.now() - new Date(item.firstSeen).getTime()) / 864e5 > 60) flags.push('posting is older than 60 days');
     if (item.contactEmail && /gmail|yahoo|outlook|hotmail/i.test(item.contactEmail)) flags.push('contact is a free email address');
     if (item.feeRequired) flags.push('asks for a fee');
     const chk = el('details');

@@ -1,7 +1,7 @@
 /* FEED — "Adventure Mode" and the Stage card. UI Spec v2 section 9.
    Desktop: two panes (list 162u + evidence 94u), keyboard-first. */
 
-import { assembleDrop, mark, bump, skipped, muteTopic, personalFor, STATE, setSetting } from '../store.js';
+import { assembleDrop, mark, bump, muteTopic, STATE, setSetting } from '../store.js';
 
 export const title = 'Today';
 export const keys = [['J/K','MOVE'],['S','SAVE'],['P','PLAN'],['X','LESS'],['?','WHY'],['ENTER','OPEN']];
@@ -41,10 +41,9 @@ const GLYPH = {
 /* ---- 9.2 row D. Criteria come from the data, never invented. A criterion with no
         information is UNKNOWN; a line with nothing at all is omitted. ---- */
 function criteria(item, weights) {
-  const mine = Object.entries(weights).filter(([, w]) => !w.muted && w.w > 0.3).map(([k]) => k);
+  const mine = Object.entries(weights).filter(([, w]) => !w.paused && w.weight > 0.3).map(([k]) => k);
   const skills = (item.skills || []).map(s => s.toLowerCase());
   const matched = skills.filter(s => mine.includes(s));
-  const missing = mine.length ? [] : null;
 
   const match = [], gap = [], unk = [];
   if (matched.length) match.push(matched.slice(0, 3).join(', '));
@@ -93,7 +92,7 @@ function fuse(daysLeft) {
 /* ---- SAVED stamp: pre-rendered on a canvas at -4 degrees, nearest-neighbour (3.4).
         Never a CSS rotate on live DOM. ---- */
 function stampCanvas() {
-  const u = 1, W = 24, H = 10;
+  const W = 24, H = 10;
   const off = document.createElement('canvas'); off.width = W; off.height = H;
   const g = off.getContext('2d'); g.imageSmoothingEnabled = false;
   g.strokeStyle = '#FF2E97'; g.lineWidth = 1; g.strokeRect(0.5, 0.5, W - 1, H - 1);
@@ -386,8 +385,8 @@ export async function render(ctx) {
       btn.setAttribute('aria-expanded', String(open));
       if (!open) { panel.innerHTML = ''; return; }
       const kws = (entry.item.skills || []).map(k => k.toLowerCase());
-      const chosen = kws.filter(k => ctx.weights[k]?.kind === 'CHOSE');
-      const guessed = kws.filter(k => ctx.weights[k] && ctx.weights[k].kind === 'GUESSED' && ctx.weights[k].w > 0);
+      const chosen = kws.filter(k => ctx.weights[k]?.kind === 'explicit');
+      const guessed = kws.filter(k => ctx.weights[k] && ctx.weights[k].kind === 'inferred' && ctx.weights[k].weight > 0);
       panel.innerHTML = '';
       const l1 = el('div', 'row');
       if (chosen.length) {
@@ -501,9 +500,9 @@ export async function render(ctx) {
     cards = [];
     let drop;
     if (view === 'ALL') {
-      drop = ctx.items.map(it => ({ item: it, s: { daysLeft: it.deadline ? (new Date(it.deadline) - Date.now()) / 864e5 : null, why: ['place'], place: '' }, tag: 'ALL' }));
+      drop = ctx.items.map(it => ({ item: it, s: { daysLeft: it.deadline ? (new Date(it.deadline).getTime() - Date.now()) / 864e5 : null, why: ['place'], place: '' }, tag: 'ALL' }));
       const key = { RELEVANCE:null, NEWEST:'firstSeen', DEADLINE:'deadline', SOURCE:'source' }[sort];
-      if (key === 'firstSeen') drop.sort((a, b) => new Date(b.item.firstSeen) - new Date(a.item.firstSeen));
+      if (key === 'firstSeen') drop.sort((a, b) => new Date(b.item.firstSeen).getTime() - new Date(a.item.firstSeen).getTime());
       if (key === 'deadline')  drop.sort((a, b) => (a.s.daysLeft ?? 1e9) - (b.s.daysLeft ?? 1e9));
       if (key === 'source')    drop.sort((a, b) => String(a.item.source?.name).localeCompare(String(b.item.source?.name)));
       if (key === null) drop = assembleDrop(ctx.items, ctx.weights, { n: ctx.items.length, align });
@@ -580,7 +579,7 @@ export async function render(ctx) {
     if (k === 'enter') { e.detail.raw.preventDefault(); return api.open(cur.entry); }
   };
   async function planIt(entry) {
-    await mark(entry.item, STATE.PLANNED, { plannedFor: entry.item.deadline || null });
+    await mark(entry.item, STATE.PLANNED, { planned_for: entry.item.deadline || null });
     await bump(entry.item.skills, 'plan');
     ctx.SFX.checkpoint();
     ctx.toast('PLANNED — IN THE QUEST LOG', 'is-lime');

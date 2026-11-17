@@ -28,7 +28,7 @@ export async function render(ctx) {
   for (const a of apps) {
     if (a.appliedOn) events.push({ date: new Date(a.appliedOn + 'T12:00:00'), title: 'Applied: ' + a.title, url: a.url, done: true, kind: 'APPLIED' });
   }
-  events.sort((a, b) => a.date - b.date);
+  events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
   const h = el('div', 'hdr'); h.innerHTML = '<h1 class="t-display">CALENDAR</h1>';
   wrap.append(h);
@@ -48,7 +48,7 @@ export async function render(ctx) {
   const upcoming = events.filter(e => e.kind === 'DEADLINE' && !e.done && e.date >= today).slice(0, 8);
   if (!upcoming.length) left.append(el('p', 'empty t-small', 'No open deadlines.'));
   for (const e of upcoming) {
-    const days = Math.ceil((e.date - today) / 864e5);
+    const days = Math.ceil((e.date.getTime() - today.getTime()) / 864e5);
     const row = el('div', 'quest' + (days <= 3 ? ' is-soon' : ''));
     row.append(el('span', 'when t-small', days === 0 ? 'TODAY' : days === 1 ? 'TOMORROW' : days + ' DAYS'));
     if (e.url) { const a = el('a', 't-body', e.title); a.href = e.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; row.append(a); }

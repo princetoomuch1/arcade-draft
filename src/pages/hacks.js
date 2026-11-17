@@ -15,7 +15,7 @@ const el = (t, c, x) => { const n = document.createElement(t); if (c) n.classNam
 const LEVELS = ['CITY', 'STATE', 'COUNTRY', 'WORLD'];
 const RINGS = [10, 25, 50];   // km
 
-const daysLeft = it => it.deadline ? Math.ceil((new Date(it.deadline) - Date.now()) / 864e5) : null;
+const daysLeft = it => it.deadline ? Math.ceil((new Date(it.deadline).getTime() - Date.now()) / 864e5) : null;
 
 export async function render(ctx) {
   const wrap = el('div');
@@ -217,7 +217,7 @@ export async function render(ctx) {
     const save = el('button', 'btn t-small is-primary', 'SAVE');
     save.onclick = async () => { await mark(it, STATE.SAVED); await bump(it.skills, 'save'); ctx.coins++; ctx.refreshChrome(); ctx.SFX.save(); save.textContent = 'SAVED'; };
     const plan = el('button', 'btn t-small', 'PLAN IT');
-    plan.onclick = async () => { await mark(it, STATE.PLANNED, { plannedFor: it.deadline }); await bump(it.skills, 'plan'); ctx.SFX.checkpoint(); ctx.toast('IN THE QUEST LOG', 'is-lime'); };
+    plan.onclick = async () => { await mark(it, STATE.PLANNED, { planned_for: it.deadline }); await bump(it.skills, 'plan'); ctx.SFX.checkpoint(); ctx.toast('IN THE QUEST LOG', 'is-lime'); };
     const open = el('a', 'btn t-small is-ghost', 'OPEN LISTING');
     open.href = it.url; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.style.textDecoration = 'none';
     acts.append(save, plan, open);

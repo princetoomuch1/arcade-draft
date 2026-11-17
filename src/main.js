@@ -1,7 +1,7 @@
 /* Opportunity Hub — boot, router, chrome. UI Spec v2 sections 6, 7, 14.2, 18.
    Desktop only: mouse and keyboard, landscape, minimum 900 x 560 CSS px. */
 
-import { apply, metrics, tooSmall, DENSITY } from './u.js';
+import { apply, metrics } from './u.js';
 import * as S from './store.js';
 import { init as audioInit, SFX, setVolume, setMuted, setHoverBlips, toggleMute, touch as audioTouch } from './sound.js';
 
@@ -32,6 +32,8 @@ const TABS = [
 const KEYS = {
   f:'feed', j:'jobs', h:'hacks', n:'news', m:'more', d:'desk', w:'wall'
 };
+/* The Desk is home: the Computer is a monitor sitting on it, not the room. */
+const HOME = 'desk';
 
 /* ---------- app state shared with pages ---------- */
 export const ctx = {
@@ -46,7 +48,7 @@ async function loadData() {
   for (const f of files) {
     try {
       const r = await fetch(`data/${f}.json`, { cache: 'no-cache' });
-      if (!r.ok) throw new Error(r.status);
+      if (!r.ok) throw new Error(String(r.status));
       const j = await r.json();
       out.push(...(j.items || []));
     } catch (e) {
@@ -142,9 +144,9 @@ function wipeSwap(fn) {
 /* ---------- router ---------- */
 let current = null;
 export async function go(route, params = {}) {
-  const r = (route || 'feed').replace(/^#\/?/, '');
+  const r = (route || HOME).replace(/^#\/?/, '');
   const [name] = r.split('/');
-  if (!PAGES[name]) return go('feed');
+  if (!PAGES[name]) return go(HOME);
   if (location.hash !== `#/${r}`) { history.pushState({}, '', `#/${r}`); }
   if (current === name) { await mount(name, params); return; }
   wipeSwap(async () => { await mount(name, params); });
@@ -167,7 +169,8 @@ async function mount(name, params) {
   host.scrollTop = 0;
   const node = await mod.render(ctx, params);
   if (node) host.append(node);
-  for (const b of document.querySelectorAll('.tab')) b.setAttribute('aria-selected', String(b.dataset.route === name));
+  for (const b of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.tab')))
+    b.setAttribute('aria-selected', String(b.dataset.route === name));
   renderKeybar(mod.keys);
   document.title = (mod.title ? mod.title + ' — ' : '') + 'Career Arcade';
 }
@@ -191,7 +194,7 @@ function onKey(e) {
   const k = e.key.toLowerCase();
   audioInit(); audioTouch();
   if (KEYS[k]) { e.preventDefault(); SFX.click(); return go(KEYS[k]); }
-  if (k === 'escape') { e.preventDefault(); SFX.back(); return go('feed'); }
+  if (k === 'escape') { e.preventDefault(); SFX.back(); return go(HOME); }
   if (k === 'm' && e.shiftKey) { e.preventDefault(); const m = toggleMute(); const p = $('#pause'); if (p) p.textContent = m ? 'MUTED' : 'PAUSE'; return; }
   // page-local keys get the event through this custom event
   document.dispatchEvent(new CustomEvent('arcade:key', { detail: { key: k, shift: e.shiftKey, raw: e } }));
@@ -222,7 +225,7 @@ function bootScreen() {
   const start = () => {
     SFX.coin();
     b.innerHTML = `<div class="t-title blink" style="color:var(--gold)">PRESS START</div>`;
-    const go2 = () => { SFX.pressStart(); powerOn(); go('feed'); };
+    const go2 = () => { SFX.pressStart(); powerOn(); go(HOME); };
     document.addEventListener('keydown', go2, { once: true });
     b.addEventListener('click', go2, { once: true });
   };
@@ -250,6 +253,7 @@ async function boot() {
 
   await S.persist();
   const swept = await S.sweepDrawer();
+  const archived = await S.archiveExpired();
   await S.decay();
 
   const day = await S.markActiveDay();
@@ -269,6 +273,7 @@ async function boot() {
   else bootScreen();
 
   if (swept) toast(`${swept} ITEM${swept > 1 ? 'S' : ''} LEFT THE DRAWER`, 'is-ghost');
+  if (archived) toast(`${archived} PAST ITEM${archived > 1 ? 'S' : ''} MOVED TO THE DRAWER`, 'is-ghost');
   if (day.fresh && day.count > 1) toast(`DAY ${day.count} — BULB LIT`, 'is-gold');
   if (!ctx.items.length) {
     toast('NO DATA FILES LOADED', 'is-orange');

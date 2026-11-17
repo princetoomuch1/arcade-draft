@@ -1,22 +1,78 @@
-/* Opportunity Hub — state. UI Spec v2 sections 6 (lifecycle), 15.2 (weights), 15.3 (score), 17.1 (contract).
-   Everything personal lives in IndexedDB on this machine. Nothing is sent anywhere. */
+/* Career Arcade — state. UI Spec v2 sections 6 (lifecycle), 15.2 (weights), 15.3 (score), 17.1 (contract).
+   Everything personal lives in IndexedDB on this machine. Nothing is sent anywhere.
+   Field names follow src/model.js. Version 2 migrates the version 1 camelCase records in place. */
 
-const DB = 'arcade', VER = 1;
-const STORES = ['items', 'personal', 'notes', 'goals', 'apps', 'weights', 'meta'];
+import {
+  blankItemRecord, blankInterest, blankPlan, uid,
+  expiresAt as itemExpiresAt, receipt
+} from './model.js';
+
+export { uid, receipt };
+
+const DB = 'arcade', VER = 2;
+const STORES = ['items', 'personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans', 'refresh'];
+
+/* ---------- migration ---------- */
+/** v1 personal record -> ItemRecord. Exported so a test can check it without a browser. */
+export function migratePersonal(old) {
+  const rec = blankItemRecord(old.id);
+  rec.state = old.state ?? rec.state;
+  rec.saved_at = old.savedAt ?? null;
+  rec.planned_for = old.plannedFor ?? null;
+  rec.drawer_at = old.drawerAt ?? null;
+  rec.wall_zone = old.wallZone ?? null;
+  rec.desk_position = old.deskPos ? { x: old.deskPos.x, y: old.deskPos.y, rot: old.deskPos.rot ?? 0 } : null;
+  rec.strings = Array.isArray(old.strings) ? old.strings : [];
+  rec.snapshot = old.snapshot ?? null;
+  rec.notes = Array.isArray(old.notes) ? old.notes : [];
+  rec.pinned_desk = [STATE.SAVED, STATE.PLANNED, STATE.PINNED].includes(rec.state);
+  rec.pinned_wall = rec.state === STATE.PINNED;
+  rec.status = rec.state === STATE.DRAWER ? 'archived'
+    : rec.state === STATE.EXPIRED ? 'expired'
+      : rec.state === STATE.SEEN ? 'active' : 'saved';
+  rec.expires_at = old.snapshot ? itemExpiresAt(old.snapshot) : null;
+  rec.last_checked_at = old.snapshot?.lastSeen ? new Date(old.snapshot.lastSeen).getTime() : null;
+  rec.last_changed_at = old.snapshot?.lastChanged ? new Date(old.snapshot.lastChanged).getTime() : rec.last_checked_at;
+  return rec;
+}
+
+/** v1 weight record -> Interest. */
+export function migrateWeight(old) {
+  return blankInterest(old.id, {
+    label: old.id,
+    kind: old.kind === 'CHOSE' ? 'explicit' : 'inferred',
+    weight: typeof old.w === 'number' ? old.w : 0.2,
+    source: old.kind === 'CHOSE' ? 'you' : 'save',
+    recency: old.last ?? Date.now(),
+    paused: !!old.muted,
+    seen: old.seen ?? 0,
+    skips: Array.isArray(old.skips) ? old.skips : [],
+    decayed_at: old.decayedAt ?? null
+  });
+}
 
 let db = null;
 export function open() {
   if (db) return Promise.resolve(db);
   return new Promise((res, rej) => {
     const r = indexedDB.open(DB, VER);
-    r.onupgradeneeded = () => {
-      const d = r.result;
+    r.onupgradeneeded = ev => {
+      const d = r.result, tx = r.transaction;
       for (const s of STORES) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' });
+      if (ev.oldVersion >= 1 && ev.oldVersion < 2 && tx) {
+        rewrite(tx.objectStore('personal'), migratePersonal);
+        rewrite(tx.objectStore('weights'), migrateWeight);
+      }
     };
     r.onsuccess = () => { db = r.result; res(db); };
     r.onerror = () => rej(r.error);
   });
 }
+function rewrite(store, fn) {
+  const q = store.openCursor();
+  q.onsuccess = () => { const c = q.result; if (!c) return; c.update(fn(c.value)); c.continue(); };
+}
+
 const tx = (store, mode = 'readonly') => open().then(d => d.transaction(store, mode).objectStore(store));
 export const put = (store, val) => tx(store, 'readwrite').then(s => new Promise((res, rej) => {
   const r = s.put(val); r.onsuccess = () => res(val); r.onerror = () => rej(r.error); }));
@@ -35,100 +91,125 @@ export async function persist() {
 
 /* ---------- 6. item lifecycle ---------- */
 export const STATE = {
-  SEEN:'SEEN', SAVED:'SAVED', PLANNED:'PLANNED', PINNED:'PINNED', DONE:'DONE',
-  EXPIRED:'EXPIRED', DRAWER:'DRAWER', KEPT:'KEPT', GOLD:'GOLD'
+  SEEN: 'SEEN', SAVED: 'SAVED', PLANNED: 'PLANNED', PINNED: 'PINNED', DONE: 'DONE',
+  EXPIRED: 'EXPIRED', DRAWER: 'DRAWER', KEPT: 'KEPT', GOLD: 'GOLD'
 };
 const DRAWER_DAYS = 14;
-
-/** Personal record for an item. Absent means never touched: it is a plain feed item. */
-const blank = id => ({ id, state: STATE.SEEN, savedAt:null, plannedFor:null, drawerAt:null,
-                       deskPos:null, wallZone:null, strings:[], snapshot:null, notes:[] });
+const ON_DESK = [STATE.SAVED, STATE.PLANNED, STATE.PINNED, STATE.DONE];
 
 export async function mark(item, state, extra = {}) {
-  const p = (await get('personal', item.id)) || blank(item.id);
+  const p = (await get('personal', item.id)) || blankItemRecord(item.id);
   p.state = state;
-  if (state === STATE.SAVED && !p.savedAt) p.savedAt = Date.now();
-  if (state === STATE.DRAWER) p.drawerAt = Date.now();
+  if (state === STATE.SAVED && !p.saved_at) p.saved_at = Date.now();
+  if (state === STATE.DRAWER) { p.drawer_at = Date.now(); p.status = 'archived'; }
+  if (state === STATE.PINNED) p.pinned_wall = true;
+  if (ON_DESK.includes(state)) { p.pinned_desk = true; p.status = 'saved'; }
   if (state === STATE.SAVED || state === STATE.PLANNED) {
     // Keep a snapshot: the source copy is deleted when it expires, the user's copy must survive.
-    p.snapshot = { title:item.title, org:item.org, url:item.url, source:item.source,
-                   deadline:item.deadline, city:item.city, skills:item.skills, type:item.type };
+    p.snapshot = { ...item };
+    p.expires_at = itemExpiresAt(item);
+    const r = receipt(item);
+    p.last_checked_at = r.checked; p.last_changed_at = r.changed;
   }
   Object.assign(p, extra);
   return put('personal', p);
 }
-export const personalFor = id => get('personal', id).then(p => p || blank(id));
+export const personalFor = id => get('personal', id).then(p => p || blankItemRecord(id));
 
 /** Items in the drawer past 14 days are gone for good. Called on every boot. */
 export async function sweepDrawer(now = Date.now()) {
   const ps = await all('personal');
-  const dead = ps.filter(p => p.state === STATE.DRAWER && p.drawerAt && now - p.drawerAt > DRAWER_DAYS * 864e5);
+  const dead = ps.filter(p => p.state === STATE.DRAWER && p.drawer_at && now - p.drawer_at > DRAWER_DAYS * 864e5);
   await Promise.all(dead.map(p => del('personal', p.id)));
   return dead.length;
 }
 export const drawerDaysLeft = p =>
-  p.state === STATE.DRAWER && p.drawerAt ? Math.max(0, DRAWER_DAYS - Math.floor((Date.now() - p.drawerAt) / 864e5)) : null;
+  p.state === STATE.DRAWER && p.drawer_at
+    ? Math.max(0, DRAWER_DAYS - Math.floor((Date.now() - p.drawer_at) / 864e5)) : null;
+
+/** A saved item whose deadline has passed is archived, never deleted. Returns how many moved. */
+export async function archiveExpired(now = Date.now()) {
+  const ps = await all('personal');
+  const stale = ps.filter(p => ON_DESK.includes(p.state) && p.expires_at && p.expires_at < now);
+  for (const p of stale) { p.state = STATE.DRAWER; p.status = 'archived'; p.drawer_at = now; await put('personal', p); }
+  return stale.length;
+}
 
 /* ---------- 15.2 interest weights ---------- */
-const DELTA = { save:0.15, more:0.25, plan:0.20, open:0.05, read:0.05, less:-0.30 };
-const MAX_GUESSED = 200;
+const DELTA = { save: 0.15, more: 0.25, plan: 0.20, open: 0.05, read: 0.05, less: -0.30 };
+const MAX_INFERRED = 200;
 const clamp = n => Math.min(1, Math.max(0, n));
 
-/** CHOSE = the user typed it, weight 1.0, never decays. GUESSED = inferred, starts 0.20, decays. */
+/** explicit = you typed it, weight 1.0, never decays. inferred = read off your behaviour, decays. */
 export async function bump(keywords, event) {
   const d = DELTA[event]; if (d == null) return;
   for (const k of keywords || []) {
     const key = k.toLowerCase().trim(); if (!key) continue;
-    const w = (await get('weights', key)) || { id:key, w:0.20, kind:'GUESSED', seen:0, last:Date.now() };
-    if (w.kind === 'CHOSE') continue;                 // user's own interests are not nudged by behaviour
-    if (w.muted) continue;
-    w.w = clamp(w.w + d); w.seen++; w.last = Date.now();
+    const w = (await get('weights', key)) || blankInterest(key, { source: event });
+    if (w.kind === 'explicit') continue;              // your own interests are not nudged by behaviour
+    if (w.paused) continue;
+    w.weight = clamp(w.weight + d); w.seen++; w.recency = Date.now();
     await put('weights', w);
   }
-  await trimGuessed();
+  await trimInferred();
 }
 export async function chooseInterest(keyword) {
   const key = keyword.toLowerCase().trim();
-  return put('weights', { id:key, w:1.0, kind:'CHOSE', seen:0, last:Date.now() });
+  return put('weights', blankInterest(key, { kind: 'explicit', weight: 1.0, source: 'you' }));
 }
 export async function muteTopic(keyword) {
   const key = keyword.toLowerCase().trim();
-  return put('weights', { id:key, w:0, kind:'GUESSED', muted:true, last:Date.now() });
+  const w = (await get('weights', key)) || blankInterest(key);
+  w.paused = true; w.weight = 0; w.recency = Date.now();
+  return put('weights', w);
+}
+export async function resumeTopic(keyword) {
+  const w = await get('weights', keyword.toLowerCase().trim());
+  if (!w) return null;
+  w.paused = false; w.recency = Date.now();
+  return put('weights', w);
 }
 /** Skipping only counts after 3 skips of the same keyword inside 7 days. */
 export async function skipped(keywords) {
   for (const k of keywords || []) {
     const key = k.toLowerCase().trim(); if (!key) continue;
-    const w = (await get('weights', key)); if (!w || w.kind === 'CHOSE' || w.muted) continue;
+    const w = await get('weights', key); if (!w || w.kind === 'explicit' || w.paused) continue;
     const recent = (w.skips || []).filter(t => Date.now() - t < 7 * 864e5);
     recent.push(Date.now()); w.skips = recent;
-    w.w = clamp(w.w + (recent.length >= 3 ? -0.03 : -0.01));
+    w.weight = clamp(w.weight + (recent.length >= 3 ? -0.03 : -0.01));
     await put('weights', w);
   }
 }
-/** GUESSED weights lose 3% a day: half-life about 23 days. CHOSE weights do not move. */
+/** inferred weights lose 3% a day: half-life about 23 days. explicit weights do not move. */
 export async function decay(now = Date.now()) {
   const ws = await all('weights');
   for (const w of ws) {
-    if (w.kind === 'CHOSE' || w.muted) continue;
-    const days = Math.floor((now - (w.decayedAt || w.last || now)) / 864e5);
+    if (w.kind === 'explicit' || w.paused) continue;
+    const days = Math.floor((now - (w.decayed_at || w.recency || now)) / 864e5);
     if (days < 1) continue;
-    w.w = clamp(w.w * Math.pow(0.97, days)); w.decayedAt = now;
+    w.weight = clamp(w.weight * Math.pow(0.97, days)); w.decayed_at = now;
     await put('weights', w);
   }
 }
-async function trimGuessed() {
-  const ws = (await all('weights')).filter(w => w.kind === 'GUESSED' && !w.muted);
-  if (ws.length <= MAX_GUESSED) return;
-  ws.sort((a, b) => a.w - b.w);
-  await Promise.all(ws.slice(0, ws.length - MAX_GUESSED).map(w => del('weights', w.id)));
+async function trimInferred() {
+  const ws = (await all('weights')).filter(w => w.kind === 'inferred' && !w.paused);
+  if (ws.length <= MAX_INFERRED) return;
+  ws.sort((a, b) => a.weight - b.weight);
+  await Promise.all(ws.slice(0, ws.length - MAX_INFERRED).map(w => del('weights', w.id)));
 }
 export const weightMap = () => all('weights').then(ws => Object.fromEntries(ws.map(w => [w.id, w])));
 
-/* ---------- 15.3 score and drop assembly ---------- */
-export const PLACE = { city:1.0, state:0.8, country:0.5, world:0.2, online:0.6 };
+/* ---------- deadline plans: official date is locked, the rest is yours ---------- */
+export async function planFor(item) {
+  const p = await get('plans', item.id);
+  return p || blankPlan(item.id, item.deadline ?? null);
+}
+export const savePlan = plan => put('plans', plan);
 
-export function placeOf(item, home = { city:'Rajkot', state:'Gujarat', country:'India' }) {
+/* ---------- 15.3 score and drop assembly ---------- */
+export const PLACE = { city: 1.0, state: 0.8, country: 0.5, world: 0.2, online: 0.6 };
+
+export function placeOf(item, home = { city: 'Rajkot', state: 'Gujarat', country: 'India' }) {
   if (item.mode === 'online') return 'online';
   if (item.city && item.city === home.city) return 'city';
   if (item.state && item.state === home.state) return 'state';
@@ -138,7 +219,7 @@ export function placeOf(item, home = { city:'Rajkot', state:'Gujarat', country:'
 
 export function score(item, weights, now = Date.now(), align = 'BALANCED') {
   const kws = (item.skills || []).map(k => k.toLowerCase());
-  let I = Math.min(1, kws.reduce((s, k) => s + (weights[k]?.muted ? 0 : (weights[k]?.w || 0)), 0) / 3);
+  let I = Math.min(1, kws.reduce((s, k) => s + (weights[k]?.paused ? 0 : (weights[k]?.weight || 0)), 0) / 3);
 
   const ageH = item.firstSeen ? (now - new Date(item.firstSeen).getTime()) / 36e5 : 0;
   let F = item.type === 'news' ? Math.exp(-ageH / 72) : (ageH < 48 ? 1.0 : 0.5);
@@ -148,28 +229,28 @@ export function score(item, weights, now = Date.now(), align = 'BALANCED') {
 
   const P = PLACE[placeOf(item)] ?? 0.2;
 
-  if (align === 'MORE')    I = Math.min(1, I * 1.3);
+  if (align === 'MORE') I = Math.min(1, I * 1.3);
   if (align === 'BROADER') { I = I * 0.6; F = Math.min(1, F * 1.3); }
 
-  const parts = { match:0.45*I, fresh:0.15*F, urgency:0.20*U*Math.min(1, I + 0.3), place:0.20*P };
+  const parts = { match: 0.45 * I, fresh: 0.15 * F, urgency: 0.20 * U * Math.min(1, I + 0.3), place: 0.20 * P };
   const total = parts.match + parts.fresh + parts.urgency + parts.place;
   // Store the top two contributions so WHY THIS? always tells the truth.
-  const why = Object.entries(parts).sort((a,b) => b[1]-a[1]).slice(0,2).map(([k]) => k);
+  const why = Object.entries(parts).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => k);
   return { total, parts, why, I, daysLeft, place: placeOf(item) };
 }
 
-const WILDCARDS = { MORE:0, BALANCED:2, BROADER:3 };
+const WILDCARDS = { MORE: 0, BALANCED: 2, BROADER: 3 };
 
 /** 70% best match, 20% POPULAR (labelled, never called personal), 10% wildcard. */
 export function assembleDrop(items, weights, { n = 12, align = 'BALANCED', now = Date.now() } = {}) {
   const scored = items.map(it => ({ item: it, s: score(it, weights, now, align) }));
   const wildN = WILDCARDS[align] ?? 2;
-  const popN  = Math.round(n * 0.20);
+  const popN = Math.round(n * 0.20);
   const forMe = n - popN - wildN;
 
   const isWild = e => {
     const kws = (e.item.skills || []).map(k => k.toLowerCase());
-    return kws.some(k => { const w = weights[k]; return w && !w.muted && w.w >= 0.10 && w.w <= 0.30; });
+    return kws.some(k => { const w = weights[k]; return w && !w.paused && w.weight >= 0.10 && w.weight <= 0.30; });
   };
 
   const pool = [...scored].sort((a, b) => b.s.total - a.s.total);
@@ -195,7 +276,7 @@ export function assembleDrop(items, weights, { n = 12, align = 'BALANCED', now =
 /** Popular at 4 and 9, a wildcard at 6 or 7, max 3 of a type in a row, max 2 from one source in the
  *  first 6. Every card that came in comes out exactly once: this reorders, it never drops or clones. */
 function order(pick) {
-  const pop  = pick.filter(p => p.tag === 'POPULAR');
+  const pop = pick.filter(p => p.tag === 'POPULAR');
   const wild = pick.filter(p => p.tag === 'WILD');
   const rest = pick.filter(p => p.tag === 'FOR_ME');
 
@@ -236,10 +317,7 @@ function order(pick) {
 }
 
 /* ---------- 17.1 expiry. Unsaved items past expiresAt are gone for good. ---------- */
-export const expiresAt = it => it.expiresAt ? new Date(it.expiresAt).getTime()
-  : it.deadline ? new Date(it.deadline).getTime()
-  : it.endDate  ? new Date(it.endDate).getTime()
-  : it.lastSeen ? new Date(it.lastSeen).getTime() + 30 * 864e5 : Infinity;
+export const expiresAt = itemExpiresAt;
 
 export function dropExpired(items, personal, now = Date.now()) {
   const keep = new Set(personal.filter(p => p.state !== STATE.SEEN).map(p => p.id));
@@ -248,14 +326,15 @@ export function dropExpired(items, personal, now = Date.now()) {
 
 /* ---------- settings ---------- */
 const DEFAULTS = {
-  density:'CHUNKY', align:'BALANCED', dropSize:12, volume:0.7, muted:false, hoverBlips:false,
-  crt:false, reduceMotion:false, textScale:1, wallMaterial:'cork', deskAsList:false,
-  lang:'en', notifications:false, home:{ city:'Rajkot', state:'Gujarat', country:'India' }
+  density: 'CHUNKY', align: 'BALANCED', dropSize: 12, volume: 0.7, muted: false, hoverBlips: false,
+  crt: false, reduceMotion: false, textScale: 1, wallMaterial: 'cork', deskAsList: false,
+  lang: 'en', notifications: false, personalization: true, quietHours: null, githubToken: '',
+  home: { city: 'Rajkot', state: 'Gujarat', country: 'India' }
 };
 export async function settings() { return { ...DEFAULTS, ...((await get('meta', 'settings'))?.v || {}) }; }
 export async function setSetting(k, v) {
   const cur = (await get('meta', 'settings'))?.v || {};
-  cur[k] = v; return put('meta', { id:'settings', v:cur });
+  cur[k] = v; return put('meta', { id: 'settings', v: cur });
 }
 
 /* ---------- 13.3 string lights: one bulb per active day, cumulative, never reset ---------- */
@@ -263,7 +342,7 @@ export async function markActiveDay(now = new Date()) {
   const key = now.toISOString().slice(0, 10);
   const rec = (await get('meta', 'activeDays'))?.v || [];
   const fresh = !rec.includes(key);
-  if (fresh) { rec.push(key); await put('meta', { id:'activeDays', v:rec }); }
+  if (fresh) { rec.push(key); await put('meta', { id: 'activeDays', v: rec }); }
   return { fresh, count: rec.length, index: rec.length - 1 };
 }
 export const activeDays = () => get('meta', 'activeDays').then(r => (r?.v || []));

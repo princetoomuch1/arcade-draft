@@ -19,10 +19,29 @@ comes from there. Do not invent a value that is not in the spec.
 
 ## Run it
 
-Double-click `serve.cmd` (Windows). It opens the calibration page.
-Or from a terminal here: `npx serve -l 5173 .` then open `http://localhost:5173/calibrate.html`.
+```
+npm install
+npm run dev
+```
 
-`file://` will not work — `src/u.js` is an ES module and the browser blocks module imports over `file://`.
+Then open `http://localhost:5173/`. The calibration page is at `/calibrate.html`.
+`npm run dev` uses `tools/serve.mjs`, which has no dependencies of its own.
+
+`file://` will not work — the app is ES modules and the browser blocks module imports over `file://`.
+
+## Checking your own work
+
+`npm run verify` runs all five checks and prints a table:
+
+| Script | What it does |
+| --- | --- |
+| `npm run build` | Copies the site into `dist/`, fails if the HTML references a file that is not shipped, validates every `data/*.json` |
+| `npm run typecheck` | `tsc --noEmit` over the JSDoc types in `src/model.js` and the rest of `src/` |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest, over the store and model logic |
+| `npm run audit` | Imports resolve, named exports exist, CSS classes defined, no forbidden CSS, every stylesheet linked |
+
+Nothing is "done" until `npm run verify` is green and the evidence is in `BUILD_LOG.md`.
 
 ## Build step 0 — what to check
 
@@ -46,22 +65,6 @@ Check **CHUNKY** (the default); also check **FINE** if your monitor is 1440p or 
 
 Any real `FAIL` in section 6 is a token bug — fix the hex in `tokens.css`, not the test.
 
-## Next steps (spec section 17.3)
-
-Step 1 is the scraper and the data contract (hackathons first), then step 2 the PWA shell.
-
-## Checking your own work
-
-`node audit.js` from this folder. It checks, with no browser needed:
-
-- every static and dynamic import path resolves
-- every named import actually exists as an export in the target module
-- every CSS class the JS uses is defined in a stylesheet
-- no forbidden CSS anywhere (`border-radius`, `linear-gradient`, `backdrop-filter`, any `blur()`),
-  with comments stripped first so the FORBIDDEN list in `pixel.css` does not trip it
-
-Run it after every change. It catches the failures that otherwise only show up as a blank screen.
-
 ## What is built
 
 | Stage | State |
@@ -71,9 +74,23 @@ Run it after every change. It catches the failures that otherwise only show up a
 | 2 — Feed and the stage card | done |
 | 3 — Jobs, Hacks, News | done |
 | 4 — Desk and Wall | built (`src/desk.js`, `src/wall.js`, `src/room.css`), not spec-checked: Spec v2 is not in this folder |
-| 5 — Notes, Calendar, Applications, Options | built, not browser-tested. Missing: note image thumbnails, Calendar Year Wheel (`src/stage5.css` holds the styles) |
+| 5 — Notes, Calendar, Applications, Options | built and browser-tested. Missing: note image thumbnails, Calendar Year Wheel |
 | 6 — QA pass | not started |
 
 Seed data in `data/*.json` is **fictional**. Every row carries `_mock: true` and every source is
 `seed.local`, and the UI prints "SEED ROW — fictional" wherever one is shown in detail. Build step 1
 replaces it with real scraped data.
+
+## Build phases
+
+The phase plan and the evidence for each one live in `BUILD_LOG.md`.
+
+| Phase | State |
+| --- | --- |
+| 0 — toolchain, data model, store v2, CI | done |
+| 1 — Computer shell + Feed | next |
+| 2–4 — Jobs/Apps, Hackathons/News, Notes/Calendar | pages exist, need the spec's extras |
+| 5–6 — Desk and Wall | built, need item types, crumple, auto-strings, shake bias, wall photos |
+| 7–8 — shared logic, ethical engagement | not started |
+| 9 — scrapers | not started; `data/*.json` is fictional seed data, every row carries `_mock: true` |
+| 10 — PWA, accessibility, polish | not started |

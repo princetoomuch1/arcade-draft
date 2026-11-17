@@ -2,7 +2,7 @@
    Nothing is silently merged: a duplicate stack lists every source. A summary never replaces
    the original headline or the link to it. */
 
-import { mark, bump, skipped, muteTopic, STATE } from '../store.js';
+import { mark, bump, STATE } from '../store.js';
 import { raggedEdge } from '../sprites.js';
 
 export const title = 'News';
@@ -36,10 +36,10 @@ export async function render(ctx) {
       byCluster.get(it.cluster).push(it);
     }
     const groups = [...byCluster.values()].map(list => {
-      const sorted = [...list].sort((a, b) => new Date(a.firstSeen) - new Date(b.firstSeen));
+      const sorted = [...list].sort((a, b) => new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime());
       return { lead: sorted[0], others: sorted.slice(1) };
     });
-    let out = [...groups, ...solo].sort((a, b) => new Date(b.lead.firstSeen) - new Date(a.lead.firstSeen));
+    let out = [...groups, ...solo].sort((a, b) => new Date(b.lead.firstSeen).getTime() - new Date(a.lead.firstSeen).getTime());
     if (filterTag) out = out.filter(g => (g.lead.skills || []).map(s => s.toLowerCase()).includes(filterTag));
     return out;
   }
