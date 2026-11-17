@@ -1,0 +1,54 @@
+/* Opportunity Hub — tokens. UI Spec v2 section 4. Hexes are measured, do not eyeball new ones. */
+
+:root {
+  /* 4.1 Monitor (Career Arcade) */
+  --bg:         #0F0F1B;
+  --surface:    #1A1A2E;
+  --surface-hi: #24243E;
+  --bevel-hi:   #3D3D5C;  /* decorative only, 1.64 on surface, never marks a control */
+  --bevel-lo:   #0A0A12;
+  --edge:       #7A7AA6;  /* input/toggle/slider outlines, 4.19 on surface */
+  --cyan:       #00F0FF;  /* links, active tab, focus ring */
+  --pink:       #FF2E97;  /* save + primary action only */
+  --gold:       #FFD93D;  /* coins, score, milestones */
+  --lime:       #6BCB77;  /* success, MATCH */
+  --orange:     #FF6B35;  /* warning, EXPIRING */
+  --danger:     #FF3864;  /* delete, GAP */
+  --text:       #E8E8F0;
+  --muted:      #9494AA;  /* 5.75 on surface */
+  --white:      #FFFFFF;  /* 1u sparkle pixels + peak highlights. NEVER text. */
+  --ink:        #0F0F1B;  /* text on any bright fill */
+
+  /* 4.4 Desk */
+  --wood-dk:    #5C3A21;
+  --wood:       #8B5A2B;
+  --wood-lt:    #A0522D;
+  --cork:       #C8A97E;
+  --cork-dot:   #A67B5B;
+  --paper:      #F5F0E1;
+  --paper-aged: #EDE0C8;
+  --ink-desk:   #1A1A1A;  /* 15.28 on paper */
+  --string:     #C41E3A;  /* ALWAYS with --string-line outline: 1.0:1 on wood bare */
+  --string-line:#2A0810;
+  --pin-gold:   #FFD700;
+  --pin-red:    #FF6B6B;
+  --pin-teal:   #4ECDC4;
+  --coffee:     #6F4E37;
+  --plant:      #6BCB77;
+  --lamp:       #FFD93D;
+
+  /* 4.5 Wall (default corkboard) */
+  --wall:       #D4B896;
+  --wall-dk:    #B8956A;
+  --zone-line:  #8B6F47;
+  --bulb:       #FFD93D;
+  --wire:       #3D3D5C;
+  --goal-fill:  #4ECDC4;  /* always with a 1u --ink outline: 1.7:1 on paper bare */
+
+  /* 4.5 other wall materials */
+  --brick:      #9C4A3C;  --brick-mortar: #D9CDB8;
+  --panel:      #4A3020;  --panel-grain:  #3A2416;
+  --pegboard:   #C9A66B;  --pegboard-hole:#8A6B3E;
+  --plaster:    #EDE6D6;  --plaster-shade:#D8CFBB;
+  --chalk-bg:   #2F4A3F;  --chalk-line:   #E6EDE3;
+}

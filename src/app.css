@@ -1,0 +1,153 @@
+/* Opportunity Hub — shell layout. UI Spec v2 sections 6 (cabinet, bars), 7 (CRT), 14.2 (wipe).
+   Every length is calc(N * var(--u)) with N an integer. See pixel.css for the law. */
+
+#app { position:relative; width:100vw; height:100vh; overflow:hidden; background:#07070E; }
+
+/* ---- cabinet shell: the wood/metal box the monitor sits in ---- */
+.cabinet {
+  position:absolute; inset:0; display:grid; place-items:center;
+  background:var(--bg);
+}
+.crt-window {
+  position:relative; overflow:hidden;
+  width:calc(var(--cw) * var(--u)); height:calc(var(--ch) * var(--u));
+  background:var(--bg);
+  border:calc(1*var(--u)) solid var(--bevel-lo);
+}
+
+/* ---- top bar, 12u. Left group is pinned left, the readouts are pinned right so an
+       ultrawide window does not leave them stranded mid-screen. Order and sizes are from the spec;
+       the spec's absolute x values assume exactly 320u, which only Full HD at CHUNKY gives. ---- */
+.topbar {
+  position:absolute; top:0; left:0; right:0; height:calc(12*var(--u));
+  display:flex; align-items:center; gap:calc(6*var(--u));
+  padding:calc(2*var(--u)) calc(4*var(--u));
+  background:var(--surface); border-bottom:var(--u) solid var(--bevel-lo);
+}
+.topbar .logo { color:var(--cyan); }
+.topbar .spacer { flex:1 1 auto; }
+.topbar .readout { display:flex; align-items:center; gap:calc(2*var(--u)); }
+.topbar .coins { color:var(--gold); } .topbar .lvl { color:var(--lime); } .topbar .timer { color:var(--muted); }
+.coin-icon { width:calc(8*var(--u)); height:calc(8*var(--u)); }
+
+/* ---- tab bar: 5 tabs, 30x12u each, 8x8 icon above a one-word label ---- */
+.tabbar {
+  position:absolute; left:0; right:0; top:calc(12*var(--u)); height:calc(14*var(--u));
+  display:flex; gap:calc(2*var(--u)); padding:0 calc(4*var(--u));
+  background:var(--bg); border-bottom:var(--u) solid var(--bevel-lo);
+}
+.tab {
+  width:calc(30*var(--u)); display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:calc(1*var(--u)); background:transparent; border:0; color:var(--muted); cursor:pointer;
+  min-height:max(calc(12*var(--u)), 24px);
+}
+.tab svg { width:calc(8*var(--u)); height:calc(8*var(--u)); }
+.tab[aria-selected="true"] { color:var(--cyan); border-bottom:calc(2*var(--u)) solid var(--cyan); }
+.tab:hover { color:var(--text); }
+
+/* ---- page area ---- */
+.page {
+  position:absolute; left:0; right:0;
+  top:calc(26*var(--u)); bottom:calc(12*var(--u));
+  overflow-y:auto; overflow-x:hidden; padding:calc(6*var(--u));
+  scrollbar-width:thin; scrollbar-color:var(--edge) var(--bg);
+}
+.page::-webkit-scrollbar { width:calc(3*var(--u)); }
+.page::-webkit-scrollbar-track { background:var(--bg); }
+.page::-webkit-scrollbar-thumb { background:var(--edge); }
+
+/* ---- bottom bar: the shortcut row. Permanent on desktop (section 18.4), not a fading hint. ---- */
+.keybar {
+  position:absolute; left:0; right:0; bottom:0; height:calc(12*var(--u));
+  display:flex; align-items:center; gap:calc(4*var(--u));
+  padding:0 calc(4*var(--u)); overflow:hidden;
+  background:var(--surface); border-top:var(--u) solid var(--bevel-lo);
+}
+.keybar .k { display:inline-flex; gap:calc(1*var(--u)); align-items:center; white-space:nowrap; }
+.keybar .k b { color:var(--cyan); font-weight:400; }
+.keybar .k span { color:var(--text); }
+
+/* ---- 7. CRT overlay. Decorative, never catches a click, off by default. ---- */
+.crt { position:absolute; inset:0; pointer-events:none; display:none; }
+.crt[data-on="true"] { display:block; }
+.crt .scan {
+  position:absolute; inset:0;
+  /* One dark device-pixel row every 2u, as an SVG tile. A gradient is forbidden (pixel.css): even a
+     hard-stop gradient resamples when the tile height is not a whole device pixel. */
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='2'><rect width='1' height='1' fill='%23000' fill-opacity='0.28'/></svg>");
+  background-size:var(--u) calc(2*var(--u)); background-repeat:repeat;
+}
+/* Vignette: 4 dither bands, each at least 4u tall. No alpha ramp, no blur. */
+.crt .vig {
+  position:absolute; inset:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2'><rect width='1' height='1' fill='%23000'/><rect x='1' y='1' width='1' height='1' fill='%23000'/></svg>");
+  background-size:calc(2*var(--u)) calc(2*var(--u)); background-repeat:repeat;
+  /* clipped to the outer frame only, so the middle of the screen stays clean */
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 calc(100% - 6*var(--u)),calc(6*var(--u)) calc(100% - 6*var(--u)),calc(6*var(--u)) calc(6*var(--u)),calc(100% - 6*var(--u)) calc(6*var(--u)),calc(100% - 6*var(--u)) calc(100% - 6*var(--u)),0 calc(100% - 6*var(--u)));
+}
+
+/* ---- 14.2 page wipe: 8 bars, one per 30 ms ---- */
+.wipe { position:absolute; inset:0; display:flex; pointer-events:none; }
+.wipe i { flex:1 1 0; background:var(--bg); transform:scaleY(0); transform-origin:top; }
+.wipe[data-dir="in"] i  { animation:bar-in .24s steps(1,end) forwards; }
+.wipe[data-dir="out"] i { transform:scaleY(1); animation:bar-out .24s steps(1,end) forwards; }
+@keyframes bar-in  { to { transform:scaleY(1); } }
+@keyframes bar-out { to { transform:scaleY(0); } }
+.wipe i:nth-child(1){animation-delay:0ms}   .wipe i:nth-child(2){animation-delay:30ms}
+.wipe i:nth-child(3){animation-delay:60ms}  .wipe i:nth-child(4){animation-delay:90ms}
+.wipe i:nth-child(5){animation-delay:120ms} .wipe i:nth-child(6){animation-delay:150ms}
+.wipe i:nth-child(7){animation-delay:180ms} .wipe i:nth-child(8){animation-delay:210ms}
+
+/* ---- power-on: 520 ms on. A 60 ms D50 white flash, then the picture. ---- */
+.power { position:absolute; inset:0; pointer-events:none; background:#fff; opacity:0; }
+.power[data-phase="on"]  { animation:pwr-on .52s steps(4,end) forwards; }
+.power[data-phase="off"] { animation:pwr-off .40s steps(4,end) forwards; }
+@keyframes pwr-on  { 0%{opacity:0} 12%{opacity:.5} 25%{opacity:.15} 100%{opacity:0} }
+@keyframes pwr-off { 0%{opacity:0} 50%{opacity:.5} 100%{opacity:1} }
+
+/* ---- blink: steps(1), so it is a hard on/off, never a fade ---- */
+.blink      { animation:blink 530ms steps(1,end) infinite; }
+.blink-slow { animation:blink 800ms steps(1,end) infinite; }
+.blink-600  { animation:blink 600ms steps(1,end) infinite; }
+.blink-400  { animation:blink 400ms steps(1,end) infinite; }
+@keyframes blink { 50% { visibility:hidden; } }
+
+/* ---- 7.4 boot screens ---- */
+.boot { position:absolute; inset:0; display:grid; place-items:center; align-content:center; gap:calc(8*var(--u)); text-align:center; }
+.boot .coin-plate {
+  margin-top:calc(8*var(--u)); width:calc(40*var(--u)); height:calc(16*var(--u));
+  display:grid; place-items:center; background:var(--surface-hi); color:var(--muted);
+  border:var(--u) solid var(--bevel-lo); cursor:pointer;
+}
+.boot .slot { width:calc(2*var(--u)); height:calc(8*var(--u)); background:#000; }
+
+/* ---- window too small (section 18.2) ---- */
+.too-small { position:absolute; inset:0; display:grid; place-items:center; align-content:center;
+             gap:calc(6*var(--u)); text-align:center; background:var(--bg); z-index:100; padding:calc(8*var(--u)); }
+:root[data-too-small="false"] .too-small { display:none; }
+
+/* ---- shared page furniture used by every page ---- */
+.hdr { display:flex; align-items:baseline; gap:calc(6*var(--u)); margin-bottom:calc(6*var(--u)); }
+.hdr h1 { margin:0; color:var(--text); }
+.chip {
+  display:inline-flex; align-items:center; gap:calc(2*var(--u));
+  padding:calc(1*var(--u)) calc(3*var(--u)); background:var(--surface-hi); color:var(--text);
+  border:var(--u) solid var(--bevel-lo); min-height:max(calc(10*var(--u)),24px);
+}
+.chip.is-cyan { background:var(--cyan); color:var(--ink); border-color:var(--cyan); }
+.chip.is-gold { background:var(--gold); color:var(--ink); border-color:var(--gold); }
+.chip.is-pink { background:var(--pink); color:var(--ink); border-color:var(--pink); }
+.chip.is-lime { background:var(--lime); color:var(--ink); border-color:var(--lime); }
+.chip.is-orange { background:var(--orange); color:var(--ink); border-color:var(--orange); }
+.chip.is-ghost { background:transparent; color:var(--muted); border-color:var(--edge); }
+.btn {
+  font-family:'Silkscreen',monospace; font-size:calc(8*var(--u)); text-transform:uppercase;
+  color:var(--text); background:var(--surface); border:var(--u) solid var(--edge);
+  padding:calc(3*var(--u)) calc(6*var(--u)); cursor:pointer;
+  min-height:max(calc(10*var(--u)),24px);
+}
+.btn:hover { background:var(--surface-hi); }
+.btn.is-primary { background:var(--pink); color:var(--ink); border-color:var(--pink); }
+.btn.is-ghost { background:transparent; color:var(--muted); }
+.stub { color:var(--muted); max-width:calc(200*var(--u)); }
+.stub b { color:var(--text); font-weight:400; }

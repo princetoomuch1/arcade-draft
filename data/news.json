@@ -1,0 +1,166 @@
+{
+ "generated": "2026-11-17T19:11:45.366Z",
+ "contract": "UI Spec v2 section 17.1",
+ "mock": true,
+ "items": [
+  {
+   "id": "seed-018",
+   "_mock": true,
+   "org": null,
+   "summary": "A smaller variant lands alongside the existing sizes.",
+   "cluster": "c-model-release",
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "ai",
+    "llm",
+    "open source"
+   ],
+   "firstSeen": "2026-11-17T16:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 7,
+   "type": "news",
+   "title": "Open-weights model family adds a smaller tier",
+   "url": "https://seed.local/n/1",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-019",
+   "_mock": true,
+   "org": null,
+   "summary": null,
+   "cluster": "c-model-release",
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "ai",
+    "llm"
+   ],
+   "firstSeen": "2026-11-17T15:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 7,
+   "type": "news",
+   "title": "Same model release, second outlet",
+   "url": "https://seed.local/n/2",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-020",
+   "_mock": true,
+   "org": null,
+   "summary": "New scores across a dozen tasks.",
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "agents",
+    "benchmarks",
+    "ai"
+   ],
+   "firstSeen": "2026-11-17T01:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 4,
+   "type": "news",
+   "title": "Agent benchmark results published",
+   "url": "https://seed.local/n/3",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-021",
+   "_mock": true,
+   "org": null,
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "hardware",
+    "edge",
+    "ai"
+   ],
+   "firstSeen": "2026-11-16T03:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "news",
+   "title": "Edge inference chip announced",
+   "url": "https://seed.local/n/4",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-022",
+   "_mock": true,
+   "org": null,
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "ai",
+    "law",
+    "data"
+   ],
+   "firstSeen": "2026-11-17T11:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 5,
+   "type": "news",
+   "title": "Dataset licence dispute goes to court",
+   "url": "https://seed.local/n/5",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  }
+ ]
+}

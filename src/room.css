@@ -1,0 +1,112 @@
+/* The Room: Desk and Wall (stage 4). Integer u only. No radius, no gradient, no blur.
+   Wall patterns are crisp SVG data URIs, not gradients. */
+
+/* ================= DESK ================= */
+.desk-bar { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; margin-bottom:calc(4*var(--u)); }
+.desk-bar .btn[aria-pressed="true"] { background:var(--gold); color:var(--ink); border-color:var(--gold); }
+.desk-scroll { overflow:auto; max-width:100%; }
+.world {
+  position:relative; width:calc(560*var(--u)); height:calc(400*var(--u)); flex:none;
+  background:var(--wood); border:calc(2*var(--u)) solid var(--wood-dk);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='8'><rect width='32' height='8' fill='%238B5A2B'/><rect y='7' width='32' height='1' fill='%235C3A21'/><rect x='5' y='2' width='9' height='1' fill='%23A0522D'/><rect x='19' y='5' width='7' height='1' fill='%23A0522D'/></svg>");
+  background-size:calc(32*var(--u)) calc(8*var(--u));
+}
+.world.is-string { cursor:crosshair; }
+.strings { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.shade { position:absolute; inset:0; pointer-events:none; background-color:transparent; }
+.shade.is-off { display:block; }
+.world:not([data-lamp="off"]) .shade { display:none; }
+
+.paper {
+  position:absolute; width:calc(52*var(--u)); min-height:calc(34*var(--u)); padding:calc(3*var(--u));
+  background:var(--paper); color:var(--ink-desk); border:var(--u) solid #5A5248;
+  cursor:grab; user-select:none; touch-action:none; text-align:left;
+}
+.paper.is-drag { cursor:grabbing; z-index:50; }
+.paper.is-pick { outline:calc(2*var(--u)) solid var(--gold); outline-offset:calc(1*var(--u)); }
+.paper .pt { display:block; margin-bottom:calc(1*var(--u)); }
+.paper .ps { display:block; color:#5A5248; }
+.paper .pdue { display:inline-block; margin-top:calc(1*var(--u)); padding:0 calc(1*var(--u)); background:var(--pin-teal); color:var(--ink-desk); }
+.paper .pdue.is-soon { background:var(--pin-red); }
+.paper .tosser { position:absolute; right:calc(1*var(--u)); top:calc(1*var(--u)); background:none; border:0; cursor:pointer; color:#5A5248; padding:0 calc(1*var(--u)); }
+.paper .tosser:hover { color:var(--string); }
+
+.obj { position:absolute; }
+.computer { left:calc(412*var(--u)); top:calc(10*var(--u)); width:calc(136*var(--u)); }
+.monitor { background:#CFC4A8; border:calc(2*var(--u)) solid #5A5248; padding:calc(4*var(--u)); }
+.screen { background:var(--bg); border:calc(2*var(--u)) solid #000; padding:calc(3*var(--u)); height:calc(60*var(--u)); color:var(--cyan); cursor:pointer; display:block; width:100%; text-align:left; }
+.screen:hover, .screen:focus-visible { outline:calc(2*var(--u)) solid var(--gold); outline-offset:0; }
+.screen .l2 { color:var(--lime); } .screen .l3 { color:var(--gold); }
+.screen[data-on="false"] { background:#000; color:#000; }
+.stand { margin:0 auto; width:calc(24*var(--u)); height:calc(8*var(--u)); background:#8F866F; border:var(--u) solid #5A5248; border-top:0; }
+.base { margin:0 auto; width:calc(52*var(--u)); height:calc(4*var(--u)); background:#8F866F; border:var(--u) solid #5A5248; }
+.keyboard { margin-top:calc(4*var(--u)); height:calc(14*var(--u)); background:#CFC4A8; border:calc(2*var(--u)) solid #5A5248; display:grid; grid-template-columns:repeat(14, 1fr); gap:var(--u); padding:calc(2*var(--u)); }
+.keyboard i { background:#5A5248; }
+.mouse { position:absolute; right:calc(-14*var(--u)); bottom:calc(0*var(--u)); width:calc(8*var(--u)); height:calc(12*var(--u)); background:#CFC4A8; border:var(--u) solid #5A5248; }
+
+.lamp { left:calc(14*var(--u)); top:calc(14*var(--u)); width:calc(36*var(--u)); height:calc(70*var(--u)); background:none; border:0; padding:0; cursor:pointer; }
+.lamp .head { position:absolute; left:calc(2*var(--u)); top:0; width:calc(30*var(--u)); height:calc(14*var(--u)); background:var(--lamp); border:calc(2*var(--u)) solid var(--ink); }
+.lamp[aria-pressed="false"] .head { background:#6B6240; }
+.lamp .arm { position:absolute; left:calc(16*var(--u)); top:calc(14*var(--u)); width:calc(4*var(--u)); height:calc(46*var(--u)); background:#3D3D3D; }
+.lamp .foot { position:absolute; left:calc(6*var(--u)); top:calc(60*var(--u)); width:calc(24*var(--u)); height:calc(8*var(--u)); background:#3D3D3D; border:var(--u) solid var(--ink); }
+.lamp:focus-visible { outline:calc(2*var(--u)) solid var(--cyan); }
+
+.mug { left:calc(368*var(--u)); top:calc(52*var(--u)); width:calc(20*var(--u)); height:calc(22*var(--u)); background:var(--paper); border:calc(2*var(--u)) solid var(--ink); }
+.mug::before { content:""; position:absolute; left:var(--u); right:var(--u); top:var(--u); height:calc(5*var(--u)); background:var(--coffee); }
+.mug::after { content:""; position:absolute; right:calc(-8*var(--u)); top:calc(5*var(--u)); width:calc(6*var(--u)); height:calc(10*var(--u)); border:calc(2*var(--u)) solid var(--ink); background:none; }
+.plantpot { left:calc(300*var(--u)); top:calc(40*var(--u)); width:calc(28*var(--u)); height:calc(44*var(--u)); }
+.plantpot .leaf { position:absolute; background:var(--plant); border:var(--u) solid var(--ink); }
+.plantpot .pot { position:absolute; left:calc(4*var(--u)); bottom:0; width:calc(20*var(--u)); height:calc(14*var(--u)); background:var(--wood-lt); border:calc(2*var(--u)) solid var(--ink); }
+
+.drawer-btn { left:calc(60*var(--u)); top:calc(360*var(--u)); }
+.drawer-panel { margin-top:calc(4*var(--u)); padding:calc(4*var(--u)); background:var(--wood-dk); color:var(--paper); border:calc(2*var(--u)) solid #000; max-width:calc(300*var(--u)); }
+.drawer-panel[hidden] { display:none; }
+.drawer-row { display:flex; gap:calc(3*var(--u)); align-items:center; padding:calc(1*var(--u)) 0; flex-wrap:wrap; }
+.drawer-row .nm { flex:1 1 calc(100*var(--u)); }
+
+/* ================= WALL ================= */
+.wall { position:relative; padding:calc(6*var(--u)); border:calc(2*var(--u)) solid #000; min-height:calc(300*var(--u)); }
+.wall-cork     { background-color:var(--wall); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23D4B896'/><rect x='3' y='2' width='1' height='1' fill='%23A67B5B'/><rect x='11' y='6' width='1' height='1' fill='%23A67B5B'/><rect x='6' y='12' width='1' height='1' fill='%23B8956A'/><rect x='14' y='13' width='1' height='1' fill='%23A67B5B'/></svg>"); background-size:calc(16*var(--u)) calc(16*var(--u)); }
+.wall-brick    { background-color:var(--brick); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='16'><rect width='32' height='16' fill='%23D9CDB8'/><rect x='0' y='1' width='15' height='6' fill='%239C4A3C'/><rect x='16' y='1' width='16' height='6' fill='%239C4A3C'/><rect x='0' y='9' width='7' height='6' fill='%239C4A3C'/><rect x='8' y='9' width='15' height='6' fill='%239C4A3C'/><rect x='24' y='9' width='8' height='6' fill='%239C4A3C'/></svg>"); background-size:calc(32*var(--u)) calc(16*var(--u)); }
+.wall-panel    { background-color:var(--panel); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='8'><rect width='16' height='8' fill='%234A3020'/><rect x='15' width='1' height='8' fill='%233A2416'/><rect x='3' y='3' width='6' height='1' fill='%233A2416'/></svg>"); background-size:calc(16*var(--u)) calc(8*var(--u)); }
+.wall-pegboard { background-color:var(--pegboard); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><rect width='8' height='8' fill='%23C9A66B'/><rect x='3' y='3' width='2' height='2' fill='%238A6B3E'/></svg>"); background-size:calc(8*var(--u)) calc(8*var(--u)); }
+.wall-plaster  { background-color:var(--plaster); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%23EDE6D6'/><rect x='4' y='5' width='2' height='1' fill='%23D8CFBB'/><rect x='12' y='11' width='2' height='1' fill='%23D8CFBB'/></svg>"); background-size:calc(16*var(--u)) calc(16*var(--u)); }
+.wall-chalk    { background-color:var(--chalk-bg); background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='%232F4A3F'/><rect x='2' y='9' width='3' height='1' fill='%23405E51'/><rect x='10' y='3' width='2' height='1' fill='%23405E51'/></svg>"); background-size:calc(16*var(--u)) calc(16*var(--u)); }
+
+.lights { position:relative; margin-bottom:calc(6*var(--u)); padding-top:calc(4*var(--u)); }
+.lights .wire { position:absolute; left:0; right:0; top:calc(4*var(--u)); height:calc(2*var(--u)); background:var(--wire); border-top:var(--u) solid #000; }
+.lights .row { position:relative; display:flex; flex-wrap:wrap; gap:calc(8*var(--u)); padding-top:calc(4*var(--u)); }
+.bulb { width:calc(8*var(--u)); height:calc(10*var(--u)); background:var(--bulb); border:var(--u) solid var(--ink); cursor:pointer; padding:0; }
+.bulb:hover, .bulb:focus-visible { background:#FFF3B0; outline:calc(2*var(--u)) solid var(--cyan); }
+.bulb.is-today { outline:calc(2*var(--u)) solid var(--white); }
+.lights-lab { margin-top:calc(2*var(--u)); color:var(--ink-desk); background:var(--paper); display:inline-block; padding:0 calc(2*var(--u)); }
+
+.zones { display:flex; flex-wrap:wrap; gap:calc(6*var(--u)); align-items:flex-start; }
+.zone { width:calc(120*var(--u)); min-height:calc(60*var(--u)); padding:calc(3*var(--u)); border:calc(2*var(--u)) dashed var(--zone-line); }
+.zone h3 { margin:0 0 calc(3*var(--u)); color:var(--ink-desk); background:var(--paper); display:inline-block; padding:0 calc(2*var(--u)); }
+.pin-card { display:block; background:var(--paper); color:var(--ink-desk); border:var(--u) solid #5A5248; padding:calc(2*var(--u)) calc(3*var(--u)); margin-bottom:calc(3*var(--u)); text-align:left; width:100%; }
+.pin-card .pn { display:block; }
+
+.goals { display:flex; flex-wrap:wrap; gap:calc(6*var(--u)); margin:calc(6*var(--u)) 0; }
+.goal { width:calc(120*var(--u)); background:var(--paper); color:var(--ink-desk); border:calc(2*var(--u)) solid #5A5248; padding:calc(3*var(--u)); }
+.goal h3 { margin:0 0 calc(2*var(--u)); }
+.goalbar { height:calc(6*var(--u)); background:#CFC4A8; border:var(--u) solid var(--ink); margin:calc(2*var(--u)) 0; }
+.goalbar i { display:block; height:100%; background:var(--goal-fill); }
+.cp { display:flex; gap:calc(2*var(--u)); align-items:center; padding:calc(1*var(--u)) 0; cursor:pointer; background:none; border:0; width:100%; text-align:left; color:var(--ink-desk); }
+.cp .box { width:calc(7*var(--u)); height:calc(7*var(--u)); border:var(--u) solid var(--ink); background:#fff; flex:none; }
+.cp.is-done .box { background:var(--goal-fill); }
+.cp.is-done .tx { text-decoration:line-through; }
+.goal .mini { background:none; border:0; color:#8A3F33; cursor:pointer; padding:0; }
+.goal-form { display:flex; gap:calc(3*var(--u)); flex-wrap:wrap; margin-bottom:calc(4*var(--u)); }
+
+.shelf { margin-top:calc(8*var(--u)); }
+.shelf .board { display:flex; align-items:flex-end; gap:calc(8*var(--u)); flex-wrap:wrap; min-height:calc(34*var(--u)); padding:0 calc(4*var(--u)); }
+.shelf .plank { height:calc(6*var(--u)); background:var(--wood-lt); border:calc(2*var(--u)) solid var(--wood-dk); }
+.trophy { display:flex; flex-direction:column; align-items:center; width:calc(16*var(--u)); }
+.trophy .cup { width:calc(12*var(--u)); height:calc(12*var(--u)); background:var(--pin-gold); border:var(--u) solid var(--ink); }
+.trophy .stem { width:calc(4*var(--u)); height:calc(6*var(--u)); background:var(--pin-gold); border-left:var(--u) solid var(--ink); border-right:var(--u) solid var(--ink); }
+.trophy .bs { width:calc(12*var(--u)); height:calc(4*var(--u)); background:var(--wood-dk); border:var(--u) solid var(--ink); }
+.shelf-plant { position:relative; width:calc(16*var(--u)); display:flex; flex-direction:column; align-items:center; }
+.shelf-plant .lf { width:calc(4*var(--u)); background:var(--plant); border:var(--u) solid var(--ink); }
+.shelf-plant .pt2 { width:calc(14*var(--u)); height:calc(8*var(--u)); background:var(--wood-lt); border:var(--u) solid var(--ink); }
+.wall-cap { color:var(--ink-desk); background:var(--paper); display:inline-block; padding:0 calc(2*var(--u)); margin:calc(2*var(--u)) 0; }

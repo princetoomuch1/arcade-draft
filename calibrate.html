@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Build step 0 — calibration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Pixelify+Sans:wght@400..700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="src/tokens.css">
+<link rel="stylesheet" href="src/pixel.css">
+<style>
+  body { padding: calc(8*var(--u)); }
+  h2 { font-family:'Press Start 2P',monospace; font-size:calc(8*var(--u)); line-height:calc(16*var(--u));
+       text-transform:uppercase; color:var(--cyan); margin:calc(24*var(--u)) 0 calc(8*var(--u)); }
+  h2:first-child { margin-top:0 }
+  p, td, th { font-family:'Silkscreen',monospace; font-size:calc(8*var(--u)); line-height:calc(14*var(--u)); }
+  table { border-collapse:collapse; margin-bottom:calc(8*var(--u)) }
+  th, td { border:var(--u) solid var(--bevel-lo); padding:calc(2*var(--u)) calc(3*var(--u)); text-align:left }
+  th { background:var(--surface-hi); text-transform:uppercase; color:var(--muted) }
+  td { background:var(--surface) }
+  .pass { color:var(--lime) } .fail { color:var(--danger) } .warn { color:var(--orange) }
+  .best { background:#1d3320 }
+  .row { display:flex; flex-wrap:wrap; gap:calc(8*var(--u)); align-items:flex-start }
+  .box { width:calc(60*var(--u)); height:calc(32*var(--u)); display:flex; align-items:center; justify-content:center;
+         font-family:'Silkscreen',monospace; font-size:calc(8*var(--u)); text-transform:uppercase }
+  .swatch { width:calc(40*var(--u)); height:calc(16*var(--u)); display:flex; align-items:center; justify-content:center;
+            font-family:'Silkscreen',monospace; font-size:calc(8*var(--u)) }
+  button { font-family:'Silkscreen',monospace; font-size:calc(8*var(--u)); text-transform:uppercase; color:var(--text);
+           background:var(--surface); border:var(--u) solid var(--edge); padding:calc(3*var(--u)) calc(6*var(--u));
+           cursor:pointer; min-height:max(calc(16*var(--u)),44px) }
+  button[aria-pressed="true"] { background:var(--cyan); color:var(--ink); border-color:var(--cyan) }
+  canvas { display:block; border:var(--u) solid var(--edge) }
+  .paper { background:var(--paper); color:var(--ink-desk); padding:calc(4*var(--u)) }
+  .note { color:var(--muted) }
+  code { font-family:'VT323',monospace; font-size:calc(16*var(--u)); color:var(--gold) }
+</style>
+</head>
+<body>
+
+<h2>1 &middot; Device report</h2>
+<div class="row">
+  <button id="dCHUNKY"  aria-pressed="false">chunky 180</button>
+  <button id="dBALANCED" aria-pressed="false">balanced 240</button>
+  <button id="dFINE"    aria-pressed="false">fine 320</button>
+</div>
+<div id="device"></div>
+
+<h2>2 &middot; Font sharpness (measured)</h2>
+<p class="note">Desktop only, so the one density that must pass is <strong>CHUNKY</strong>; check FINE too if
+you use a 1440p or 4K monitor. Each cell renders real glyphs at that device-pixel size and counts pixels that are
+neither pure background nor pure foreground. Those are anti-aliased fringe. 0% = the glyph grid lands
+on whole device pixels. Lower is sharper. Threshold: under 2% passes, 2&ndash;8% is soft, over 8% is blurry.</p>
+<div id="sharp"></div>
+
+<h2>3 &middot; U grid</h2>
+<p class="note">Heavy line every 8u, label every 32u. The checkerboard below it is 1u squares: if any
+square looks grey or uneven, u is landing on a fraction of a device pixel.</p>
+<canvas id="grid"></canvas>
+<canvas id="checker" style="margin-top:calc(4*var(--u))"></canvas>
+
+<h2>4 &middot; Type specimens</h2>
+<div id="type"></div>
+
+<h2>5 &middot; Pixel parts</h2>
+<div class="row">
+  <div class="bevel box is-link">bevel &mdash; hover</div>
+  <div class="bevel box is-pressed">pressed</div>
+  <div class="bevel box is-disabled d50">disabled</div>
+  <div class="bevel box bevel-hi">surface&nbsp;hi</div>
+</div>
+<div class="row" style="margin-top:calc(8*var(--u))">
+  <div class="bevel box">corner 0</div>
+  <div class="bevel box corner-1">corner 1u</div>
+  <div class="bevel box corner-2">corner 2u</div>
+  <div class="bevel box corner-3">corner 3u</div>
+</div>
+<div class="row" style="margin-top:calc(8*var(--u))">
+  <div class="box" style="background:var(--surface-hi)">plain</div>
+  <div class="box d25" style="background:var(--surface-hi)">d25</div>
+  <div class="box d50" style="background:var(--surface-hi)">d50</div>
+  <div class="box d75" style="background:var(--surface-hi)">d75</div>
+</div>
+<div class="row" style="margin-top:calc(8*var(--u))">
+  <div class="bevel box sh-chip">chip 1u</div>
+  <div class="bevel box sh-card">card 2u</div>
+  <div class="box sh-item is-draggable" style="background:var(--paper);color:var(--ink-desk)">item 2u on wood &mdash; hover me</div>
+  <div class="box sh-drag" style="background:var(--paper);color:var(--ink-desk)">drag 4u</div>
+</div>
+<div class="row" style="margin-top:calc(8*var(--u))">
+  <button>tab me for focus ring</button>
+  <button>and me</button>
+  <button class="hit">24px mouse floor</button>
+</div>
+
+<h2>6 &middot; Contrast check</h2>
+<p class="note">WCAG ratios computed from the tokens in this browser. Body text needs 4.5, UI edges need 3.0.</p>
+<div id="contrast"></div>
+
+<script type="module">
+import { DENSITY, defaultDensity, metrics, apply } from './src/u.js';
+
+const $ = s => document.querySelector(s);
+let density = defaultDensity();
+
+/* ---------- 1. device report ---------- */
+function report() {
+  const rows = Object.keys(DENSITY).map(d => {
+    const m = metrics(d);
+    const on = d === density;
+    return `<tr${on?' class="best"':''}><td>${d}${on?' &larr; active':''}</td><td>${m.D}</td><td>${m.uDev}</td>
+      <td>${m.uCss.toFixed(3)}</td><td>${m.canvasU.w} &times; ${m.canvasU.h}</td>
+      <td>${m.leftover.x} / ${m.leftover.y}</td>
+      <td class="${Number.isInteger(m.uCss)?'pass':'warn'}">${Number.isInteger(m.uCss)?'whole CSS px':'fractional CSS px (fine: whole in device px)'}</td></tr>`;
+  }).join('');
+  const m = metrics(density);
+  $('#device').innerHTML = `
+    <p>viewport <code>${innerWidth} &times; ${innerHeight}</code> CSS px &middot;
+       DPR <code>${devicePixelRatio}</code> &middot;
+       device <code>${m.wDev} &times; ${m.hDev}</code> px &middot;
+       orientation <code>${m.landscape?'landscape':'portrait'}</code> &middot;
+       reference canvas <code>${m.reference}</code>
+       ${m.tooSmall ? '&middot; <span class="fail">WINDOW TOO SMALL (min 900 &times; 560) &mdash; the app would show RESIZE THE WINDOW here</span>' : '&middot; <span class="pass">window size OK</span>'}</p>
+    <table><tr><th>setting</th><th>divisor D</th><th>uDev</th><th>u in CSS px</th><th>canvas in u</th>
+    <th>letterbox x/y dev px</th><th>note</th></tr>${rows}</table>`;
+  for (const d of Object.keys(DENSITY)) $('#d'+d).setAttribute('aria-pressed', String(d===density));
+}
+
+/* ---------- 2. font sharpness, measured ---------- */
+const SPEC = {
+  'Press Start 2P': { sizesU:[8,16,24], spec:[8,16,24] },
+  'Silkscreen':     { sizesU:[8,16,24], spec:[8] },
+  'VT323':          { sizesU:[8,10,12,14,16,18,20,24,32], spec:[16,32] },  // the unverified one
+  'Pixelify Sans':  { sizesU:[8,16,24], spec:[16] }
+};
+const SAMPLE = 'HAMBURGEFONS 0123456789';
+
+function fringe(font, pxSize) {
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d', { willReadFrequently:true });
+  ctx.font = `${pxSize}px "${font}"`;
+  const w = Math.ceil(ctx.measureText(SAMPLE).width) + 4, h = Math.ceil(pxSize * 2);
+  c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently:true });
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#000'; g.fillRect(0,0,w,h);
+  g.font = `${pxSize}px "${font}"`;
+  g.textBaseline = 'top'; g.fillStyle = '#fff';
+  g.fillText(SAMPLE, 2, Math.floor(pxSize*0.25));
+  const px = g.getImageData(0,0,w,h).data;
+  let ink = 0, fuzz = 0;
+  for (let i = 0; i < px.length; i += 4) {
+    const v = px[i];
+    if (v === 0) continue;
+    ink++;
+    if (v !== 255) fuzz++;
+  }
+  return ink ? (fuzz / ink) * 100 : NaN;
+}
+
+function verdict(p) {
+  if (!isFinite(p)) return ['fail','font did not load'];
+  if (p < 2)  return ['pass','sharp'];
+  if (p < 8)  return ['warn','soft'];
+  return ['fail','blurry'];
+}
+
+async function sharpness() {
+  const m = metrics(density);
+  await Promise.all(Object.keys(SPEC).map(f => document.fonts.load(`16px "${f}"`, SAMPLE)));
+  await document.fonts.ready;
+
+  let html = '', vt = [];
+  for (const [font, cfg] of Object.entries(SPEC)) {
+    html += `<table><tr><th colspan="5">${font} &middot; u = ${m.uDev} device px (${density})</th></tr>
+      <tr><th>size in u</th><th>device px</th><th>in spec</th><th>fringe</th><th>verdict</th></tr>`;
+    for (const su of cfg.sizesU) {
+      const pxSize = su * m.uDev;
+      const f = fringe(font, pxSize);
+      const [cls, word] = verdict(f);
+      const isSpec = cfg.spec.includes(su);
+      if (font === 'VT323') vt.push([su, f]);
+      html += `<tr${isSpec?' class="best"':''}><td>${su}u</td><td>${pxSize}</td>
+        <td>${isSpec?'yes':'&mdash;'}</td><td>${isFinite(f)?f.toFixed(2)+'%':'n/a'}</td>
+        <td class="${cls}">${word}</td></tr>`;
+    }
+    html += `</table>`;
+  }
+  const good = vt.filter(([,f]) => isFinite(f)).sort((a,b) => a[1]-b[1]);
+  if (good.length) {
+    const [bu, bf] = good[0];
+    const at16 = vt.find(([u]) => u===16)?.[1];
+    html += `<p><strong>VT323 verdict:</strong> sharpest at <code>${bu}u</code> (${bf.toFixed(2)}% fringe).
+      The spec assumed <code>16u</code> (${isFinite(at16)?at16.toFixed(2)+'%':'n/a'}).
+      ${bu===16 ? '<span class="pass">Assumption holds &mdash; keep BODY at 16u.</span>'
+                : `<span class="warn">Assumption does not hold on this machine. Change BODY to ${bu}u in src/pixel.css, nothing else moves.</span>`}</p>`;
+  }
+  $('#sharp').innerHTML = html;
+}
+
+/* ---------- 3. u grid ---------- */
+function grid() {
+  const m = metrics(density);
+  const cols = Math.min(m.canvasU.w, 160), rows = Math.min(m.canvasU.h, 80);
+  const c = $('#grid');
+  c.width = cols * m.uDev; c.height = rows * m.uDev;
+  c.style.width = (cols * m.uCss) + 'px'; c.style.height = (rows * m.uCss) + 'px';
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.fillStyle = '#0F0F1B'; g.fillRect(0,0,c.width,c.height);
+  for (let x = 0; x <= cols; x++) {
+    g.fillStyle = x % 8 ? '#24243E' : '#7A7AA6';
+    g.fillRect(x*m.uDev, 0, 1, c.height);
+  }
+  for (let y = 0; y <= rows; y++) {
+    g.fillStyle = y % 8 ? '#24243E' : '#7A7AA6';
+    g.fillRect(0, y*m.uDev, c.width, 1);
+  }
+  g.fillStyle = '#00F0FF';
+  for (let x = 0; x <= cols; x += 32) g.fillRect(x*m.uDev, 0, 1, 4*m.uDev);
+  for (let y = 0; y <= rows; y += 32) g.fillRect(0, y*m.uDev, 4*m.uDev, 1);
+
+  const k = $('#checker');
+  k.width = 64 * m.uDev; k.height = 16 * m.uDev;
+  k.style.width = (64*m.uCss)+'px'; k.style.height = (16*m.uCss)+'px';
+  const kg = k.getContext('2d'); kg.imageSmoothingEnabled = false;
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 64; x++) {
+    kg.fillStyle = (x+y) % 2 ? '#E8E8F0' : '#0F0F1B';
+    kg.fillRect(x*m.uDev, y*m.uDev, m.uDev, m.uDev);
+  }
+}
+
+/* ---------- 4. type specimens ---------- */
+const ROLES = [
+  ['t-boot','BOOT 24u','Press Start 2P','CAREER ARCADE'],
+  ['t-display','DISPLAY 16u','Press Start 2P','TODAY'],
+  ['t-title','TITLE 8u','Press Start 2P','SMART INDIA HACKATHON 2027'],
+  ['t-label','LABEL 8u','Silkscreen','SAVE  PLAN IT  WHY THIS?'],
+  ['t-small','SMALL 8u','Silkscreen','SOURCE UNSTOP.COM  SEEN 2H AGO'],
+  ['t-body','BODY 16u','VT323','A 36-hour build sprint in Rajkot. Teams of four. Hardware track open.'],
+  ['t-number','NUMBER 32u','VT323','012  45M  7'],
+  ['t-hand','HAND 16u','Pixelify Sans','ask Mufiz about the sensor node'],
+  ['t-headnews','HEAD-NEWS 16u','Pixelify Sans Bold','Centre opens IT scheme applications']
+];
+function specimens() {
+  $('#type').innerHTML = ROLES.map(([cls,label,font,text]) => {
+    const onPaper = cls==='t-hand' || cls==='t-headnews';
+    return `<p class="note">${label} &middot; ${font}</p>
+      <div class="${onPaper?'paper':''}" style="margin-bottom:calc(6*var(--u))">
+        <span class="${cls}">${text}</span></div>`;
+  }).join('');
+}
+
+/* ---------- 6. contrast ---------- */
+const lum = hex => {
+  const n = parseInt(hex.slice(1),16);
+  const a = [(n>>16)&255,(n>>8)&255,n&255].map(v => { v/=255; return v<=0.03928 ? v/12.92 : ((v+0.055)/1.055)**2.4; });
+  return 0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2];
+};
+const ratio = (a,b) => { const [x,y] = [lum(a),lum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+const tok = n => getComputedStyle(document.documentElement).getPropertyValue('--'+n).trim();
+
+const PAIRS = [
+  ['text','surface',4.5,'body text on panel'],
+  ['text','bg',4.5,'body text on screen'],
+  ['muted','surface',4.5,'secondary text on panel'],
+  ['muted','surface-hi',4.5,'secondary text on hover'],
+  ['edge','surface',3.0,'input outline on panel'],
+  ['edge','surface-hi',3.0,'input outline on hover'],
+  ['cyan','surface',4.5,'link on panel'],
+  ['pink','surface',4.5,'save text on panel'],
+  ['gold','surface',4.5,'coins on panel'],
+  ['lime','surface',4.5,'match on panel'],
+  ['orange','surface',4.5,'expiring on panel'],
+  ['danger','surface',4.5,'delete text on panel'],
+  ['ink','pink',4.5,'ink on pink fill'],
+  ['ink','danger',4.5,'ink on danger fill'],
+  ['ink','gold',4.5,'ink on gold fill'],
+  ['ink','cyan',4.5,'ink on cyan fill'],
+  ['ink-desk','paper',4.5,'handwriting on paper'],
+  ['ink-desk','paper-aged',4.5,'print on aged paper'],
+  ['ink-desk','wall',4.5,'label text on corkboard'],
+  ['coffee','paper',3.0,'mug against paper'],
+  ['string','wood',3.0,'red string on bare wood (known fail: needs 1u outline)'],
+  ['string-line','wood',3.0,'string outline on wood (the fix)'],
+  ['goal-fill','paper',3.0,'teal bar on paper (known fail: needs 1u ink outline)'],
+  ['bevel-hi','surface',3.0,'bevel highlight (decorative, expected fail)']
+];
+function contrast() {
+  const rows = PAIRS.map(([f,b,need,why]) => {
+    const r = ratio(tok(f), tok(b));
+    const ok = r >= need;
+    const expected = /known fail|decorative/.test(why);
+    return `<tr><td>--${f}</td><td>--${b}</td><td>${r.toFixed(2)}</td><td>${need.toFixed(1)}</td>
+      <td class="${ok?'pass':(expected?'warn':'fail')}">${ok?'pass':(expected?'expected fail':'FAIL')}</td><td>${why}</td></tr>`;
+  }).join('');
+  $('#contrast').innerHTML = `<table><tr><th>foreground</th><th>background</th><th>ratio</th><th>needs</th>
+    <th>result</th><th>what it is</th></tr>${rows}</table>`;
+}
+
+/* ---------- run ---------- */
+async function run() { apply(density); report(); grid(); specimens(); contrast(); await sharpness(); }
+for (const d of Object.keys(DENSITY)) $('#d'+d).onclick = () => { density = d; run(); };
+addEventListener('resize', () => { apply(density); report(); grid(); });
+run();
+</script>
+</body>
+</html>

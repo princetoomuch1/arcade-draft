@@ -1,0 +1,156 @@
+/* Stage card + Feed page. UI Spec v2 section 9. Desktop = landscape = two panes.
+   Reference: card 162u wide, 141u tall collapsed. Every number here is from 9.2. */
+
+/* ---- 9.1 two panes: left list 162u, 4u gap, right evidence 94u ---- */
+.feed { display:grid; grid-template-columns:calc(162*var(--u)) calc(94*var(--u));
+        gap:calc(4*var(--u)); align-items:start; }
+@media (max-width:1100px) { .feed { grid-template-columns:calc(162*var(--u)); } .evidence { display:none; } }
+
+/* ---- header controls, 53u tall ---- */
+.fhead { width:calc(162*var(--u)); margin-bottom:calc(4*var(--u)); }
+.fhead .row { display:flex; align-items:center; gap:calc(3*var(--u)); }
+.fhead .align { height:calc(22*var(--u)); flex-direction:column; align-items:flex-start; gap:calc(1*var(--u)); display:flex; }
+.fhead .view  { height:calc(12*var(--u)); }
+.fhead .lens  { height:calc(10*var(--u)); margin-top:calc(2*var(--u)); }
+
+/* 3-notch slider: track 4u, thumb 8x12, notch ticks 1x3 above the track */
+.notches { position:relative; width:calc(120*var(--u)); height:calc(14*var(--u)); cursor:pointer; }
+.notches .track { position:absolute; top:calc(5*var(--u)); left:0; right:0; height:calc(4*var(--u));
+                  background:var(--bevel-lo); border:var(--u) solid var(--edge); }
+.notches .fill  { position:absolute; top:calc(6*var(--u)); left:var(--u); height:calc(2*var(--u)); background:var(--cyan); }
+.notches .tick  { position:absolute; top:calc(1*var(--u)); width:var(--u); height:calc(3*var(--u)); background:var(--edge); }
+.notches .thumb { position:absolute; top:calc(1*var(--u)); width:calc(8*var(--u)); height:calc(12*var(--u));
+                  background:var(--surface-hi); border:var(--u) solid var(--edge); }
+.notches:focus-visible { outline:calc(2*var(--u)) solid var(--gold); }
+
+/* ---- 9.2 the stage card ---- */
+.card {
+  position:relative; width:calc(162*var(--u)); min-height:calc(141*var(--u));
+  background:var(--surface); border:var(--u) solid var(--bevel-lo);
+  padding:calc(4*var(--u)); overflow:hidden;
+}
+.card:hover, .card:focus-visible { background:var(--surface-hi); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 0 #000; }
+.card.is-sel { border-color:var(--cyan); }
+.card .face-back { position:absolute; inset:0; display:none; place-items:center; align-content:center;
+                   gap:calc(3*var(--u)); background:var(--surface); text-align:center; }
+.card.is-flipped .face-front { visibility:hidden; }
+.card.is-flipped .face-back  { display:grid; }
+
+/* entrance: slide in 16u, 4 steps of 50 ms. Only the first 3 cards get it. */
+.card.is-enter { animation:card-in .2s steps(4,end) both; }
+@keyframes card-in { from { transform:translate3d(calc(16*var(--u)),0,0); } to { transform:none; } }
+
+/* save flip: clip grows 1/8 of width per step, 4 steps of 30 ms, then opens again */
+.card.is-shut  { animation:clip-shut .12s steps(4,end) forwards; }
+.card.is-open  { animation:clip-open .12s steps(4,end) forwards; }
+@keyframes clip-shut { from{clip-path:inset(0 0 0 0)} to{clip-path:inset(0 50% 0 50%)} }
+@keyframes clip-open { from{clip-path:inset(0 50% 0 50%)} to{clip-path:inset(0 0 0 0)} }
+
+/* less: collapse 141u to 0 in 4 steps of 35 ms, slide left 24u */
+.card.is-gone { animation:card-out .14s steps(4,end) forwards; }
+@keyframes card-out { to { transform:translate3d(calc(-24*var(--u)),0,0); max-height:0; min-height:0; padding:0;
+                           border-width:0; opacity:1; } }
+
+/* row A */
+.row-a { height:calc(12*var(--u)); display:flex; align-items:center; justify-content:space-between; }
+
+/* row B: stub | perforation | title */
+.row-b { height:calc(46*var(--u)); margin-top:calc(3*var(--u));
+         display:grid; grid-template-columns:calc(34*var(--u)) calc(4*var(--u)) 1fr; }
+.stub-day { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; }
+.stub-day .n { color:var(--text); line-height:1; }
+.stub-day.is-soon .n, .stub-day.is-soon .d { color:var(--orange); }
+.stub-day .d { color:var(--muted); }
+/* perforation: 1 lit, 1 dark, with a 3u notch bitten out of each end */
+.perf { position:relative; }
+.perf .line { position:absolute; left:calc(1*var(--u)); top:calc(3*var(--u)); bottom:calc(3*var(--u)); width:var(--u);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='2'><rect width='1' height='1' fill='%237A7AA6'/></svg>");
+  background-size:var(--u) calc(2*var(--u)); background-repeat:repeat-y; }
+.perf .notch { position:absolute; left:0; width:calc(3*var(--u)); height:calc(3*var(--u)); background:var(--bg);
+               clip-path:polygon(0 0,100% 0,100% 100%,0 100%); }
+.perf .notch.top { top:0; } .perf .notch.bot { bottom:0; }
+.card-title { color:var(--text); margin:0; padding-left:calc(4*var(--u)); }
+.card-meta { color:var(--muted); margin:calc(2*var(--u)) 0 0; padding-left:calc(4*var(--u)); }
+
+/* row C: why */
+.row-c { height:calc(12*var(--u)); margin-top:calc(3*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
+.why-btn { background:none; border:0; color:var(--cyan); cursor:pointer; padding:0; text-transform:uppercase; }
+.why-btn:hover { color:var(--text); }
+.why-line { color:var(--muted); overflow:hidden; text-overflow:clip; white-space:nowrap; }
+.why-panel { display:none; margin-top:calc(2*var(--u)); }
+.card.is-why .why-panel { display:block; animation:why-open .12s steps(3,end) both; }
+@keyframes why-open { from{max-height:0;overflow:hidden} to{max-height:calc(30*var(--u))} }
+.chip.is-chose { border-style:solid; border-color:var(--lime); color:var(--lime); }
+.chip.is-guess { border-style:dashed; border-color:var(--muted); color:var(--muted); }
+
+/* row D: fit, three 10u lines */
+.row-d { margin-top:calc(3*var(--u)); }
+.fit { height:calc(10*var(--u)); display:grid; grid-template-columns:calc(7*var(--u)) calc(40*var(--u)) 1fr;
+       align-items:center; gap:calc(2*var(--u)); }
+.fit .g { width:calc(7*var(--u)); height:calc(7*var(--u)); }
+.fit .lab { color:var(--muted); }
+.fit.is-match .val { color:var(--lime); } .fit.is-gap .val { color:var(--danger); } .fit.is-unk .val { color:var(--muted); }
+
+/* row E: fuse, 30 segments, one per day */
+.row-e { margin-top:calc(3*var(--u)); height:calc(4*var(--u)); position:relative; }
+.fuse { display:flex; gap:var(--u); height:calc(4*var(--u)); }
+.fuse i { width:calc(4*var(--u)); height:calc(4*var(--u)); background:var(--bevel-lo); }
+/* Spec 9.2 row E says "bar x=4 to x=158 (154u), 30 segments of 4u with 1u gap, each 3u wide visible".
+   Those do not agree: 4u segments with 1u gaps are 149u and 4u visible, not 3u. 4u visible + 1u gap
+   = 149u is used here, which keeps "one segment = one day" exact and leaves 5u of slack at the right.
+   Flagged in the doc. */
+.fuse i.lit { background:var(--lime); } .fuse.is-warn i.lit { background:var(--gold); }
+.fuse.is-soon i.lit { background:var(--orange); }
+.fuse.is-soon i.tip { animation:blink 400ms steps(1,end) infinite; }
+.fuse .spark { position:absolute; top:calc(-2*var(--u)); width:calc(2*var(--u)); height:calc(2*var(--u));
+               background:var(--white); animation:spark 400ms steps(1,end) infinite; }
+@keyframes spark { 50% { background:var(--orange); } }
+.fuse-none { height:calc(4*var(--u)); border:var(--u) dashed var(--edge); display:flex; align-items:center;
+             justify-content:center; color:var(--muted); }
+
+/* row F: actions. Spec says 4 buttons of 38u with 3u gaps = 161u, but the inner width is 154u.
+   36u fits exactly (36*4 + 3*3 = 153). Flagged in the doc. */
+.row-f { margin-top:calc(3*var(--u)); display:flex; gap:calc(3*var(--u)); height:calc(14*var(--u)); }
+.row-f .btn { width:calc(36*var(--u)); display:inline-flex; align-items:center; justify-content:center;
+              gap:calc(2*var(--u)); padding:0; }
+.row-f .btn svg { width:calc(8*var(--u)); height:calc(8*var(--u)); }
+
+/* list + the inline mute row: layout hooks the JS fills */
+.flist { display:grid; gap:0; }
+.mute-row { display:flex; align-items:center; gap:calc(3*var(--u)); flex-wrap:wrap; }
+
+/* undo row after LESS */
+.undo { width:calc(162*var(--u)); height:calc(14*var(--u)); display:flex; align-items:center; justify-content:space-between;
+        padding:0 calc(4*var(--u)); background:var(--surface-hi); border:var(--u) solid var(--edge); color:var(--muted); }
+
+/* +1 AI float on MORE */
+.plusone { position:absolute; color:var(--cyan); pointer-events:none; animation:plus-up .2s steps(4,end) forwards; }
+@keyframes plus-up { to { transform:translate3d(0,calc(-8*var(--u)),0); visibility:hidden; } }
+
+/* coin flying to the counter */
+.coinfly { position:fixed; width:calc(8*var(--u)); height:calc(8*var(--u)); background:var(--gold); z-index:70;
+           pointer-events:none; }
+
+/* SAVED stamp: 24x10, 1u pink outline, pink text, pre-tilted -4 degrees on a canvas (3.4) */
+.stamp { width:calc(48*var(--u)); height:calc(20*var(--u)); }
+
+/* 9.4 divider */
+.divider { width:calc(162*var(--u)); height:calc(10*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
+.divider .l { flex:1 1 auto; height:var(--u); background:var(--edge); }
+.divider .t { color:var(--muted); }
+
+/* 9.6 stage clear */
+.clear { position:relative; width:calc(162*var(--u)); padding:calc(8*var(--u)); text-align:center;
+         background:var(--surface); border:var(--u) solid var(--bevel-lo); display:grid; gap:calc(4*var(--u)); }
+.clear .banner { color:var(--gold); }
+.clear .btns { display:flex; gap:calc(4*var(--u)); justify-content:center; }
+
+/* 9.5 evidence pane */
+.evidence { width:calc(94*var(--u)); position:sticky; top:0; background:var(--surface);
+            border:var(--u) solid var(--bevel-lo); padding:calc(4*var(--u)); display:grid; gap:calc(3*var(--u)); }
+.evidence h2 { margin:0; color:var(--text); }
+.evidence dl { margin:0; display:grid; gap:calc(2*var(--u)); }
+.evidence dt { color:var(--muted); } .evidence dd { margin:0; color:var(--text); }
+.evidence .missing { color:var(--orange); }
+.evidence a { color:var(--cyan); }
+.pathway { border:var(--u) solid var(--edge); padding:calc(3*var(--u)); display:grid; gap:calc(2*var(--u)); }

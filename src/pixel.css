@@ -1,0 +1,116 @@
+/* Opportunity Hub — pixel law. UI Spec v2 section 3 + 5. */
+
+/* --u is set by u.js at runtime: uDev / devicePixelRatio, in CSS px.
+   Every length below is calc(N * var(--u)) with N an integer. No %, vw, vh, rem, em, fr. */
+:root { --u: 4px; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  /* 3.3 rendering law */
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;          /* macOS only, harmless elsewhere */
+  font-smooth: never;
+  text-rendering: geometricPrecision;
+}
+img, canvas { image-rendering: pixelated; }
+
+/* FORBIDDEN, listed so nobody reintroduces them:
+   border-radius, box-shadow with blur, text-shadow with blur, filter: blur(),
+   backdrop-filter, transition on anything but stepped timing, transform: rotate() on live DOM,
+   linear-gradient, opacity between 0 and 1 for shading (use dither). */
+
+/* ---- 5.2 type scale. font-size is always N * 8 * u for the 8-grid fonts. ---- */
+.t-display  { font-family:'Press Start 2P',monospace; font-size:calc(16*var(--u)); line-height:calc(24*var(--u)); text-transform:uppercase; }
+.t-boot     { font-family:'Press Start 2P',monospace; font-size:calc(24*var(--u)); line-height:calc(32*var(--u)); text-transform:uppercase; }
+.t-title    { font-family:'Press Start 2P',monospace; font-size:calc(8*var(--u));  line-height:calc(12*var(--u)); text-transform:uppercase; }
+.t-label    { font-family:'Silkscreen',monospace;     font-size:calc(8*var(--u));  line-height:calc(12*var(--u)); text-transform:uppercase; }
+.t-small    { font-family:'Silkscreen',monospace;     font-size:calc(8*var(--u));  line-height:calc(10*var(--u)); text-transform:uppercase; }
+.t-body     { font-family:'VT323',monospace;          font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
+.t-number   { font-family:'VT323',monospace;          font-size:calc(32*var(--u)); line-height:calc(32*var(--u)); font-variant-numeric:tabular-nums; }
+.t-hand     { font-family:'Pixelify Sans',sans-serif; font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
+.t-headnews { font-family:'Pixelify Sans',sans-serif; font-weight:700; font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
+/* Below BODY there is no VT323 size: anything smaller than 16u is Silkscreen 8u.
+   Nothing is ever set at 12u, 20u or any off-grid size. */
+
+/* ---- 5.5 glow is a hard halo, never a blur ---- */
+.halo-cyan { text-shadow: var(--u) 0 0 #00383C, calc(-1*var(--u)) 0 0 #00383C, 0 var(--u) 0 #00383C, 0 calc(-1*var(--u)) 0 #00383C; }
+.halo-gold { text-shadow: var(--u) 0 0 #4A3D00, calc(-1*var(--u)) 0 0 #4A3D00, 0 var(--u) 0 #4A3D00, 0 calc(-1*var(--u)) 0 #4A3D00; }
+
+/* ---- 3.6 bevel recipe (raised) ---- */
+.bevel {
+  background: var(--surface);
+  border: var(--u) solid var(--bevel-lo);
+  box-shadow:
+    inset var(--u) var(--u) 0 0 var(--bevel-hi),                               /* inner light: top + left */
+    inset calc(-1*var(--u)) calc(-1*var(--u)) 0 0 var(--bevel-lo);             /* inner dark: bottom + right */
+}
+.bevel-hi { background: var(--surface-hi); }
+.bevel-hi.bevel { box-shadow: inset var(--u) var(--u) 0 0 #5A5A80, inset calc(-1*var(--u)) calc(-1*var(--u)) 0 0 var(--bevel-lo); }
+.bevel.is-pressed {
+  box-shadow: inset var(--u) var(--u) 0 0 var(--bevel-lo), inset calc(-1*var(--u)) calc(-1*var(--u)) 0 0 var(--bevel-hi);
+  padding-left: calc(1*var(--u)); padding-top: calc(1*var(--u));              /* content +1u right, +1u down */
+}
+.bevel.is-disabled { box-shadow: none; }
+
+/* ---- 3.5 stair-step corners. clip-path from whole u. No border-radius anywhere. ---- */
+.corner-1 { clip-path: polygon(
+  var(--u) 0, calc(100% - var(--u)) 0, 100% var(--u), 100% calc(100% - var(--u)),
+  calc(100% - var(--u)) 100%, var(--u) 100%, 0 calc(100% - var(--u)), 0 var(--u)); }
+.corner-2 { clip-path: polygon(
+  calc(2*var(--u)) 0, calc(100% - 2*var(--u)) 0, calc(100% - 1*var(--u)) var(--u), 100% calc(2*var(--u)),
+  100% calc(100% - 2*var(--u)), calc(100% - 1*var(--u)) calc(100% - 1*var(--u)), calc(100% - 2*var(--u)) 100%,
+  calc(2*var(--u)) 100%, var(--u) calc(100% - 1*var(--u)), 0 calc(100% - 2*var(--u)),
+  0 calc(2*var(--u)), var(--u) var(--u)); }
+.corner-3 { clip-path: polygon(
+  calc(3*var(--u)) 0, calc(100% - 3*var(--u)) 0, calc(100% - 1*var(--u)) var(--u), calc(100% - 1*var(--u)) calc(2*var(--u)), 100% calc(3*var(--u)),
+  100% calc(100% - 3*var(--u)), calc(100% - 1*var(--u)) calc(100% - 2*var(--u)), calc(100% - 1*var(--u)) calc(100% - 1*var(--u)), calc(100% - 3*var(--u)) 100%,
+  calc(3*var(--u)) 100%, var(--u) calc(100% - 1*var(--u)), var(--u) calc(100% - 2*var(--u)), 0 calc(100% - 3*var(--u)),
+  0 calc(3*var(--u)), var(--u) calc(2*var(--u)), var(--u) var(--u)); }
+
+/* ---- 3.7 dither. Tiles repeat from screen origin so neighbouring panels align. ---- */
+.d25, .d50, .d75 { background-repeat: repeat; background-attachment: fixed; }
+.d25 { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2'><rect width='1' height='1' fill='%23000'/></svg>"); }
+.d50 { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2'><rect width='1' height='1' fill='%23000'/><rect x='1' y='1' width='1' height='1' fill='%23000'/></svg>"); }
+.d75 { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2'><rect width='2' height='1' fill='%23000'/><rect x='1' y='1' width='1' height='1' fill='%23000'/></svg>"); }
+.d25,.d50,.d75 { background-size: calc(2*var(--u)) calc(2*var(--u)); }
+
+/* ---- 3.8 shadows. Hard offset only, no blur radius, ever. ---- */
+.sh-chip { box-shadow: var(--u) var(--u) 0 0 #000; }
+.sh-card { box-shadow: calc(2*var(--u)) calc(2*var(--u)) 0 0 #000; }
+.sh-item { box-shadow: calc(2*var(--u)) calc(2*var(--u)) 0 0 var(--wood-dk); }
+.sh-drag { box-shadow: calc(4*var(--u)) calc(4*var(--u)) 0 0 var(--wood-dk); }
+.sh-mon  { box-shadow: calc(4*var(--u)) calc(4*var(--u)) 0 0 #000; }
+
+/* ---- 3.9 hit areas. DESKTOP ONLY: the mouse floor is 24 CSS px, not touch's 44.
+   Controls get 20u visual height and layouts tighten by roughly 45% of their vertical padding. ---- */
+.hit { position: relative; min-width: max(calc(8*var(--u)), 24px); min-height: max(calc(8*var(--u)), 24px); }
+.hit-ring { position: relative; }
+.hit-ring::after { content:''; position:absolute; inset:50% 50%; width:24px; height:24px; transform:translate(-50%,-50%); }
+
+/* ---- hover is a first-class state now, not a fine-pointer nicety ---- */
+@media (hover: hover) {
+  .bevel:hover { background: var(--surface-hi); }
+  .bevel:hover.d50 { background-blend-mode: normal; }
+}
+/* Pointer cursors: the app is mouse-first, so the cursor carries meaning. */
+.is-draggable { cursor: grab; } .is-draggable:active { cursor: grabbing; }
+.is-link { cursor: pointer; }
+
+/* ---- focus: 2u gold outline + 1u ink inner line. Readable on every surface. ---- */
+:focus-visible { outline: calc(2*var(--u)) solid var(--gold); outline-offset: 0; box-shadow: inset 0 0 0 var(--u) var(--ink); }
+
+/* ---- 3.10 z-order scale ---- */
+.z-surface{z-index:0}.z-rest{z-index:10}.z-string{z-index:20}.z-pin{z-index:30}.z-drag{z-index:40}
+.z-mon{z-index:50}.z-detail{z-index:60}.z-toast{z-index:70}.z-crt{z-index:80;pointer-events:none}
+.z-wipe{z-index:90}.z-hint{z-index:100}
+
+/* ---- 14.3 reduced motion: every wipe/hop/slide/burst becomes a 4-step dither cross-fade ---- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .24s !important; animation-timing-function: steps(4,end) !important;
+      transition-duration: .24s !important; transition-timing-function: steps(4,end) !important; }
+  .blink { animation: none !important; }   /* all blinks become solid */
+}

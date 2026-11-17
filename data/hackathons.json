@@ -1,0 +1,369 @@
+{
+ "generated": "2026-11-17T19:11:45.366Z",
+ "contract": "UI Spec v2 section 17.1",
+ "mock": true,
+ "items": [
+  {
+   "id": "seed-001",
+   "_mock": true,
+   "org": "RK University + city partners",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": "2026-11-28T19:11:45.366Z",
+   "endDate": "2026-11-30T19:11:45.366Z",
+   "city": "Rajkot",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "python",
+    "iot",
+    "civic tech",
+    "hardware"
+   ],
+   "firstSeen": "2026-11-17T16:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 3,
+   "type": "hackathon",
+   "title": "Rajkot Civic Tech Build 48",
+   "url": "https://seed.local/h/1",
+   "deadline": "2026-11-21T19:11:45.366Z",
+   "source": {
+    "name": "SEED unstop-like",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-002",
+   "_mock": true,
+   "org": "State IT dept",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": "2026-12-07T19:11:45.366Z",
+   "endDate": "2026-12-09T19:11:45.366Z",
+   "city": "Gandhinagar",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "ai",
+    "ml",
+    "nlp"
+   ],
+   "firstSeen": "2026-11-17T15:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 5,
+   "type": "hackathon",
+   "title": "Gujarat AI Challenge",
+   "url": "https://seed.local/h/2",
+   "deadline": "2026-11-26T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-003",
+   "_mock": true,
+   "org": "Makers collective",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": "2026-12-17T19:11:45.366Z",
+   "endDate": "2026-12-19T19:11:45.366Z",
+   "city": "Ahmedabad",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "embedded",
+    "pcb",
+    "sensors"
+   ],
+   "firstSeen": "2026-11-17T14:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 1,
+   "type": "hackathon",
+   "title": "Open Hardware Sprint",
+   "url": "https://seed.local/h/3",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-004",
+   "_mock": true,
+   "org": "Community",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": null,
+   "mode": "online",
+   "skills": [
+    "llm",
+    "agents",
+    "python"
+   ],
+   "firstSeen": "2026-11-17T13:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 8,
+   "type": "hackathon",
+   "title": "Global LLM Agents Jam",
+   "url": "https://seed.local/h/4",
+   "deadline": "2026-11-19T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-005",
+   "_mock": true,
+   "org": "Bank innovation lab",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": "2026-12-15T19:11:45.366Z",
+   "endDate": "2026-12-16T19:11:45.366Z",
+   "city": "Mumbai",
+   "state": "Maharashtra",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "fintech",
+    "react",
+    "node"
+   ],
+   "firstSeen": "2026-11-17T12:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "hackathon",
+   "title": "Fintech Guild 36h",
+   "url": "https://seed.local/h/5",
+   "deadline": "2026-12-03T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-006",
+   "_mock": true,
+   "org": "Hospital network",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": "Bengaluru",
+   "state": "Karnataka",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "health",
+    "ocr",
+    "python"
+   ],
+   "firstSeen": "2026-11-17T11:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 4,
+   "type": "hackathon",
+   "title": "Health Data Hack",
+   "url": "https://seed.local/h/6",
+   "deadline": "2026-12-12T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-007",
+   "_mock": true,
+   "org": "RK University",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": "Rajkot",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "dsa",
+    "java"
+   ],
+   "firstSeen": "2026-11-17T10:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 1,
+   "type": "hackathon",
+   "title": "Campus Code Cup",
+   "url": "https://seed.local/h/7",
+   "deadline": "2026-11-18T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-008",
+   "_mock": true,
+   "org": "NGO consortium",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": "Surat",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "hybrid",
+   "skills": [
+    "iot",
+    "sensors",
+    "data"
+   ],
+   "firstSeen": "2026-11-17T09:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "hackathon",
+   "title": "Climate Sensors Open Call",
+   "url": "https://seed.local/h/8",
+   "deadline": "2027-01-01T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-009",
+   "_mock": true,
+   "org": "Logistics startup",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 20000,
+    "currency": "INR",
+    "period": "month",
+    "disclosed": true
+   },
+   "workClass": "startup",
+   "startDate": null,
+   "endDate": null,
+   "city": "Ahmedabad",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "node",
+    "postgres",
+    "docker"
+   ],
+   "firstSeen": "2026-11-17T08:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "internship",
+   "title": "Backend intern, 6 months",
+   "url": "https://seed.local/i/1",
+   "deadline": "2026-11-24T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-010",
+   "_mock": true,
+   "org": "Institute lab",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": "normal",
+   "startDate": null,
+   "endDate": null,
+   "city": "Pune",
+   "state": "Maharashtra",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "python",
+    "pytorch",
+    "papers"
+   ],
+   "firstSeen": "2026-11-17T07:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 1,
+   "type": "internship",
+   "title": "ML research intern",
+   "url": "https://seed.local/i/2",
+   "deadline": "2026-12-08T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-011",
+   "_mock": true,
+   "org": "Design studio",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 15000,
+    "currency": "INR",
+    "period": "month",
+    "disclosed": true
+   },
+   "workClass": "remote",
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "react",
+    "css",
+    "figma"
+   ],
+   "firstSeen": "2026-11-17T06:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 3,
+   "type": "internship",
+   "title": "Frontend intern, remote",
+   "url": "https://seed.local/i/3",
+   "deadline": "2026-11-29T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  }
+ ]
+}

@@ -1,0 +1,222 @@
+{
+ "generated": "2026-11-17T19:11:45.366Z",
+ "contract": "UI Spec v2 section 17.1",
+ "mock": true,
+ "items": [
+  {
+   "id": "seed-012",
+   "_mock": true,
+   "org": "Product company",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 600000,
+    "currency": "INR",
+    "period": "year",
+    "disclosed": true
+   },
+   "workClass": "mainstream",
+   "startDate": null,
+   "endDate": null,
+   "city": "Rajkot",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "react",
+    "node",
+    "sql",
+    "git"
+   ],
+   "firstSeen": "2026-11-17T05:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 4,
+   "type": "job",
+   "title": "Junior full-stack developer",
+   "url": "https://seed.local/j/1",
+   "deadline": "2026-12-05T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-013",
+   "_mock": true,
+   "org": "Hardware startup",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": "startup",
+   "startDate": null,
+   "endDate": null,
+   "city": "Ahmedabad",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "c",
+    "embedded",
+    "rtos",
+    "sensors"
+   ],
+   "firstSeen": "2026-11-17T04:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 1,
+   "type": "job",
+   "title": "IoT firmware engineer",
+   "url": "https://seed.local/j/2",
+   "deadline": null,
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-014",
+   "_mock": true,
+   "org": "IT services",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 300000,
+    "currency": "INR",
+    "period": "year",
+    "disclosed": true
+   },
+   "workClass": "normal",
+   "startDate": null,
+   "endDate": null,
+   "city": "Rajkot",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "networking",
+    "linux",
+    "ticketing"
+   ],
+   "firstSeen": "2026-11-17T03:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "job",
+   "title": "Support engineer, tier 2",
+   "url": "https://seed.local/j/3",
+   "deadline": "2026-11-23T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-015",
+   "_mock": true,
+   "org": "Agency",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 900000,
+    "currency": "INR",
+    "period": "year",
+    "disclosed": true
+   },
+   "workClass": "remote",
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "python",
+    "django",
+    "aws"
+   ],
+   "firstSeen": "2026-11-17T02:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 6,
+   "type": "job",
+   "title": "Remote Python developer",
+   "url": "https://seed.local/j/4",
+   "deadline": "2026-12-01T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-016",
+   "_mock": true,
+   "org": "Retail chain",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": "mainstream",
+   "startDate": null,
+   "endDate": null,
+   "city": "Surat",
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "sql",
+    "excel",
+    "powerbi"
+   ],
+   "firstSeen": "2026-11-17T01:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 1,
+   "type": "job",
+   "title": "Data analyst",
+   "url": "https://seed.local/j/5",
+   "deadline": "2026-11-20T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-017",
+   "_mock": true,
+   "org": "Cloud consultancy",
+   "summary": null,
+   "cluster": null,
+   "pay": {
+    "amount": 800000,
+    "currency": "INR",
+    "period": "year",
+    "disclosed": true
+   },
+   "workClass": "mainstream",
+   "startDate": null,
+   "endDate": null,
+   "city": "Bengaluru",
+   "state": "Karnataka",
+   "country": "India",
+   "mode": "in_person",
+   "skills": [
+    "docker",
+    "k8s",
+    "ci",
+    "linux"
+   ],
+   "firstSeen": "2026-11-17T00:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 3,
+   "type": "job",
+   "title": "DevOps associate",
+   "url": "https://seed.local/j/6",
+   "deadline": "2026-12-15T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  }
+ ]
+}

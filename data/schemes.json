@@ -1,0 +1,102 @@
+{
+ "generated": "2026-11-17T19:11:45.366Z",
+ "contract": "UI Spec v2 section 17.1",
+ "mock": true,
+ "items": [
+  {
+   "id": "seed-023",
+   "_mock": true,
+   "org": "State council",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "funding",
+    "startup",
+    "student"
+   ],
+   "firstSeen": "2026-11-16T18:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 3,
+   "type": "scheme",
+   "title": "Student innovation grant, cycle 2",
+   "url": "https://seed.local/s/1",
+   "deadline": "2026-12-07T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-024",
+   "_mock": true,
+   "org": "Central ministry",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": null,
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "funding",
+    "hardware",
+    "deep tech"
+   ],
+   "firstSeen": "2026-11-16T17:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 4,
+   "type": "scheme",
+   "title": "Seed support for deep-tech prototypes",
+   "url": "https://seed.local/s/2",
+   "deadline": "2027-01-11T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  },
+  {
+   "id": "seed-025",
+   "_mock": true,
+   "org": "Skill mission",
+   "summary": null,
+   "cluster": null,
+   "pay": null,
+   "workClass": null,
+   "startDate": null,
+   "endDate": null,
+   "city": null,
+   "state": "Gujarat",
+   "country": "India",
+   "mode": "online",
+   "skills": [
+    "certification",
+    "training"
+   ],
+   "firstSeen": "2026-11-16T16:11:45.366Z",
+   "lastSeen": "2026-11-17T19:11:45.366Z",
+   "sourceCount": 2,
+   "type": "scheme",
+   "title": "Skilling stipend for IT certifications",
+   "url": "https://seed.local/s/3",
+   "deadline": "2026-11-25T19:11:45.366Z",
+   "source": {
+    "name": "SEED",
+    "host": "seed.local",
+    "note": "fictional seed row, not a real listing"
+   }
+  }
+ ]
+}
