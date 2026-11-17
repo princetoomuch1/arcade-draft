@@ -515,3 +515,70 @@ stepped frames instead of using the page wipe. Every other route still wipes.
    `transform: rotate()` on live DOM because it resamples and blurs the art. Resolved in favour of the
    pixel law: each kind differs by shape, fill, edge and spine instead, so the desk still reads as
    hand-placed objects without a single blurred pixel.
+
+---
+
+## 2026-11-18 — Phase 7, shared logic
+
+Five things that had been done differently on each page, or not at all, are now done once.
+
+**1. One freshness receipt.** New `src/receipt.js`, used by Jobs and Hacks (News keeps its own clipping
+header, which carries the same three dates). It separates three things that are easy to conflate:
+REPORTED, LAST CHECKED and LAST CHANGED. A row confirmed an hour ago but unchanged for a month is not
+a fresh row, and it now says `LAST CHANGED: NOT SINCE IT WAS FOUND`. A date the source never gave
+reads `NEVER` rather than today's date. A coloured dot grades it fresh / aging / stale by when it was
+last *confirmed*, not when it was written, and REPORT OUTDATED is part of the component, so every page
+offers it with the same five reasons and actually saves.
+
+**2. Duplicate clustering is shared and reversible.** `clusterItems()` groups rows by cluster id and
+leads with the one seen **first** — the original report, not whoever copied it loudest. UNCLUSTER
+splits a group into separate clippings and RECLUSTER puts it back; the choice is stored, so it
+survives a reload. News now uses this instead of its own private grouping.
+
+**3. Interest inspector.** The two kinds of interest are now visibly separate: `YOU CHOSE THESE` and
+`WORKED OUT FROM WHAT YOU DID`, with a line saying only the second decays (3% a day) and only the
+second can be reset. Per interest: REDUCE (halves it, because turning something down is not silencing
+it), PAUSE/RESUME, REMOVE. RESET ALL GUESSES clears every inferred interest and leaves what you typed
+untouched.
+
+**4. REFRESH ALL, honest on both paths.** Scraping runs in GitHub Actions, never in the browser. With
+a repository and token set, the button asks the workflow to run and reports exactly what GitHub said;
+without them it says so and shows `npm run scrape` to run yourself. A 403 reports that the token needs
+`actions:write` rather than claiming success. The token field is a password input, and the panel warns
+in orange that it is stored unencrypted in this browser, should carry the narrowest scope, and should
+be revoked on a shared machine.
+
+**5. Auto-expiry** was already wired in Phase 0 (`archiveExpired()` at boot); re-verified here.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        155 tests, 9 files (+20 this phase: shared.test.js)
+ audit       pass        21 modules, 11 stylesheets
+```
+
+### Browser verification
+
+- **Receipt** on a job read `CHECKED TODAY · REPORTED 16H AGO · LAST CHECKED 2H AGO · LAST CHANGED NOT
+  SINCE IT WAS FOUND · SOURCE SEED · EXPIRES IN 18 DAYS`, dot `r-fresh`. The same component rendered on
+  Hacks. REPORT OUTDATED saved `DEAD LINK` and the button became REPORTED.
+- **Clusters**: `+1 SOURCES` with UNCLUSTER took the page 4 → 5 clippings; RECLUSTER took it back to 4.
+- **Interests**: both groups rendered; REDUCE took python 0.60 → 0.30, still counting, not silenced;
+  RESET ALL GUESSES left exactly `rust (explicit)` behind.
+- **Refresh with no token**: state and button both say `NO REPOSITORY AND TOKEN SET. RUN THIS
+  YOURSELF:` with `npm run scrape`, and pressing it changes nothing else. Setting a repository and a
+  placeholder token flipped the plan to `dispatch` with
+  `gh workflow run scrape.yml --repo me/arcade`. No request was made to GitHub, and the placeholder
+  was cleared afterwards. The token input is `type=password`.
+- **Expiry**: a saved item with a past deadline moved to `state DRAWER, status archived` with its
+  snapshot intact, and was restorable.
+- All 12 routes clean, **zero console errors**, anti-slop sweep **0 violations**. Test data deleted.
+
+### Note on the token
+
+Nothing in this session ever held a real GitHub token: the dispatch path was proved with an injected
+fetch in the unit tests and with a placeholder string in the browser. Supplying a real one is the
+user's to do, in Options.

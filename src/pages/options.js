@@ -80,19 +80,56 @@ export async function render(ctx) {
         inp.onkeydown = e => { if (e.key === 'Enter') add.click(); };
         addRow.append(inp, add); host.append(addRow);
         if (!ws.length) host.append(el('p', 't-small', 'No interests yet. Save or add things and it fills in.'));
-        for (const w of ws.slice(0, 40)) {
+
+        const row = w => {
           const r = el('div', 'interest' + (w.kind === 'explicit' ? ' is-chose' : '') + (w.paused ? ' is-muted' : ''));
           const bar = el('div', 'w'); const i = el('i'); i.style.width = `${Math.round(w.weight * 100)}%`; bar.append(i);
-          r.append(el('span', 't-body', w.label || w.id), bar, el('span', 't-small', w.kind.toUpperCase()));
+          bar.title = `${Math.round(w.weight * 100)} out of 100`;
+          r.append(el('span', 't-body', w.label || w.id), bar);
+
+          // REDUCE halves it. Turning something down is not the same as silencing it.
+          const less = el('button', 'btn is-ghost t-small', 'REDUCE');
+          less.title = 'Halve this interest. It keeps counting, just less.';
+          less.onclick = async () => {
+            const cur = await S.get('weights', w.id);
+            cur.weight = Math.round(cur.weight * 50) / 100;
+            cur.recency = Date.now();
+            await S.put('weights', cur);
+            ctx.weights = await S.weightMap(); ctx.SFX.notch(); draw();
+          };
           const m = el('button', 'btn is-ghost t-small', w.paused ? 'RESUME' : 'PAUSE');
+          m.title = w.paused ? 'Let this count again.' : 'Stop this counting, without forgetting it.';
           m.onclick = async () => {
             w.paused ? await S.resumeTopic(w.id) : await S.muteTopic(w.id);
             ctx.weights = await S.weightMap(); ctx.SFX.click(); draw();
           };
-          r.append(m);
-          const x = el('button', 'btn is-ghost t-small', 'FORGET');
+          const x = el('button', 'btn is-ghost t-small', 'REMOVE');
+          x.title = 'Delete it. It can return if your behaviour suggests it again.';
           x.onclick = async () => { await S.del('weights', w.id); ctx.weights = await S.weightMap(); ctx.SFX.del(); draw(); };
-          r.append(x); host.append(r);
+          r.append(less, m, x);
+          return r;
+        };
+
+        // The two kinds are kept apart on screen because only one of them decays or resets.
+        for (const [label, list, resettable] of [
+          ['YOU CHOSE THESE', ws.filter(w => w.kind === 'explicit'), false],
+          ['WORKED OUT FROM WHAT YOU DID', ws.filter(w => w.kind !== 'explicit'), true]
+        ]) {
+          if (!list.length) continue;
+          host.append(el('h3', 'igroup t-label', label));
+          if (resettable) {
+            const note = el('p', 't-small', 'These decay on their own: 3% a day. What you typed never does.');
+            note.style.color = 'var(--muted)';
+            const reset = el('button', 'btn is-ghost t-small', 'RESET ALL GUESSES');
+            reset.title = 'Delete every inferred interest. What you typed yourself is untouched.';
+            reset.onclick = async () => {
+              if (reset.dataset.armed !== '1') { reset.dataset.armed = '1'; reset.textContent = 'SURE? CLICK AGAIN'; return; }
+              for (const w of list) await S.del('weights', w.id);
+              ctx.weights = await S.weightMap(); ctx.SFX.del(); draw();
+            };
+            host.append(note, reset);
+          }
+          for (const w of list.slice(0, 40)) host.append(row(w));
         }
 
         // Sources and places you muted from a card. The toast promised they are reversible here.
@@ -111,6 +148,62 @@ export async function render(ctx) {
       };
       draw();
       return [host];
+    }],
+    ['REFRESH', () => {
+      const out = [];
+      out.push(Object.assign(el('p', 't-small',
+        'SCRAPING RUNS IN GITHUB ACTIONS, NEVER IN THIS BROWSER. WITH A REPOSITORY AND A TOKEN THIS '
+        + 'BUTTON ASKS THE WORKFLOW TO RUN. WITHOUT THEM IT TELLS YOU THE COMMAND TO RUN YOURSELF.'),
+      { style: 'color:var(--muted)' }));
+
+      const repo = el('input', 'field'); repo.id = 'gh-repo'; repo.placeholder = 'owner/repo';
+      repo.value = ctx.settings.githubRepo || '';
+      repo.onchange = () => set('githubRepo', repo.value.trim());
+      const repoRow = el('div', 'opt-row');
+      repoRow.append(el('label', 't-label', 'REPOSITORY'), repo);
+      out.push(repoRow);
+
+      const tok = el('input', 'field'); tok.id = 'gh-token'; tok.type = 'password';
+      tok.placeholder = 'token with actions:write';
+      tok.value = ctx.settings.githubToken || '';
+      tok.onchange = () => set('githubToken', tok.value.trim());
+      const tokRow = el('div', 'opt-row');
+      tokRow.append(el('label', 't-label', 'TOKEN'), tok);
+      out.push(tokRow);
+      out.push(Object.assign(el('p', 't-small',
+        'The token is stored in this browser, unencrypted, like everything else here. Give it the '
+        + 'narrowest scope that works (actions:write on that one repository) and revoke it if this '
+        + 'machine is shared.'), { style: 'color:var(--orange)' }));
+
+      const state = el('p', 'refresh-state t-small');
+      const cmd = el('code', 'cmdline t-small');
+      const showPlan = () => {
+        const plan = S.refreshPlan(ctx.settings);
+        state.textContent = plan.mode === 'dispatch'
+          ? `READY: WILL ASK GITHUB TO RUN ${S.WORKFLOW} ON ${plan.repo}.`
+          : 'NO REPOSITORY AND TOKEN SET. RUN THIS YOURSELF:';
+        cmd.textContent = plan.command;
+      };
+      showPlan();
+
+      const go = el('button', 'btn is-primary t-small', 'REFRESH ALL');
+      go.onclick = async () => {
+        showPlan();
+        const plan = S.refreshPlan(ctx.settings);
+        if (plan.mode === 'manual') {
+          ctx.SFX.back();
+          ctx.toast('NO TOKEN — RUN THE COMMAND SHOWN', 'is-orange');
+          return;
+        }
+        go.disabled = true; go.textContent = 'ASKING GITHUB…';
+        const res = await S.requestRefresh(ctx.settings);
+        go.disabled = false; go.textContent = 'REFRESH ALL';
+        state.textContent = res.message.toUpperCase();
+        state.style.color = res.ok ? 'var(--lime)' : 'var(--orange)';
+        res.ok ? ctx.SFX.levelUp() : ctx.SFX.back();
+      };
+      out.push(go, state, cmd);
+      return out;
     }],
     ['DATA', () => {
       const note = el('p', 't-small', 'Everything lives in this browser on this machine. Nothing is sent anywhere.');

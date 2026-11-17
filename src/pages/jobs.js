@@ -2,6 +2,7 @@
    There is no overall score anywhere: three honest counts and a tap to read each criterion. */
 
 import { mark, bump, STATE, put, get, logApplication } from '../store.js';
+import { receiptNode } from '../receipt.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
 
@@ -402,16 +403,15 @@ export async function render(ctx) {
       box.append(d);
     }
 
-    /* freshness receipt */
+    /* freshness receipt — the shared one, so every page tells this story the same way */
     const r = el('div'); r.style.marginTop = 'calc(4*var(--u))';
     r.append(el('h2', 't-label', 'RECEIPT'));
-    for (const [k, v] of [
-      ['LAST CHECKED', `${Math.round((Date.now() - new Date(item.lastSeen).getTime()) / 36e5)}H AGO`],
-      ['LISTED', new Date(item.firstSeen).toLocaleDateString('en-IN')],
-      ['SOURCE', `${String(item.source?.name).toUpperCase()} · ${item.source?.host}`]
-    ]) {
-      const line = el('p', 't-small', `${k}: ${v}`); line.style.color = 'var(--muted)'; r.append(line);
-    }
+    r.append(receiptNode(item, {
+      onReport: async (reason, note2) => {
+        await put('meta', { id: 'report-' + item.id, v: { itemId: item.id, title: item.title, reason, note: note2, at: Date.now() } });
+        ctx.toast('NOTED ON THIS MACHINE ONLY', 'is-ghost');
+      }
+    }));
     box.append(r);
 
     /* 10.4 check before you apply. States what was checked. Never says SAFE. */

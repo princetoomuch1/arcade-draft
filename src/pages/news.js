@@ -2,7 +2,7 @@
    Nothing is silently merged: a duplicate stack lists every source. A summary never replaces
    the original headline or the link to it. */
 
-import { mark, bump, STATE, get, put, del } from '../store.js';
+import { mark, bump, STATE, get, put, del, clusterItems, brokenClusters, breakCluster, rejoinCluster } from '../store.js';
 import { raggedEdge } from '../sprites.js';
 
 export const title = 'News';
@@ -16,6 +16,7 @@ export async function render(ctx) {
   const wrap = el('div');
   let filterTag = null;
   let paused = false;
+  let broken = await brokenClusters();
 
   const head = el('div', 'hdr');
   head.innerHTML = '<h1 class="t-display">NEWS</h1>';
@@ -29,17 +30,9 @@ export async function render(ctx) {
   /* ---- cluster: one lead item per cluster, the rest become its source rows.
           An item with no cluster stands alone. ---- */
   function clustered() {
-    const byCluster = new Map(), solo = [];
-    for (const it of all()) {
-      if (!it.cluster) { solo.push({ lead: it, others: [] }); continue; }
-      if (!byCluster.has(it.cluster)) byCluster.set(it.cluster, []);
-      byCluster.get(it.cluster).push(it);
-    }
-    const groups = [...byCluster.values()].map(list => {
-      const sorted = [...list].sort((a, b) => new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime());
-      return { lead: sorted[0], others: sorted.slice(1) };
-    });
-    let out = [...groups, ...solo].sort((a, b) => new Date(b.lead.firstSeen).getTime() - new Date(a.lead.firstSeen).getTime());
+    // One shared clusterer, so Feed and News collapse duplicates by the same rule.
+    let out = clusterItems(all(), broken)
+      .sort((a, b) => new Date(b.lead.firstSeen).getTime() - new Date(a.lead.firstSeen).getTime());
     if (filterTag) out = out.filter(g => (g.lead.skills || []).map(s => s.toLowerCase()).includes(filterTag));
     return out;
   }
@@ -162,7 +155,16 @@ export async function render(ctx) {
         tab.setAttribute('aria-expanded', String(!stack.hidden));
         ctx.SFX.click();
       };
-      c.append(tab, stack);
+      const split = el('button', 'srctab t-small', 'UNCLUSTER');
+      split.title = 'Show every one of these as its own clipping, until you put them back.';
+      split.onclick = async () => { broken = await breakCluster(lead.cluster); ctx.SFX.del(); draw(); };
+      c.append(tab, split, stack);
+    }
+    if (lead.cluster && broken.includes(lead.cluster)) {
+      const back = el('button', 'srctab t-small', 'RECLUSTER');
+      back.title = 'Collapse these back into one clipping.';
+      back.onclick = async () => { broken = await rejoinCluster(lead.cluster); ctx.SFX.click(); draw(); };
+      c.append(back);
     }
 
     const acts = el('div', 'acts');

@@ -291,6 +291,93 @@ export function applyMutes(items, { mutedSources = [], mutedPlaces = [] } = {}) 
   });
 }
 
+/* ---------- duplicate clustering ----------
+   The same opportunity turns up on four sites. Collapsing them is a kindness; hiding that we did it
+   is not. A cluster always says how many it stands for and can always be opened, and a cluster you
+   broke apart stays broken until you say otherwise. */
+
+/** Items that carry the same `cluster` id, grouped. Everything else stands alone. */
+export function clusterItems(items, broken = []) {
+  const open = new Set(broken);
+  const byKey = new Map(), out = [];
+  for (const it of items) {
+    if (!it.cluster || open.has(it.cluster)) { out.push({ lead: it, others: [], cluster: null }); continue; }
+    if (!byKey.has(it.cluster)) {
+      const g = { lead: it, others: [], cluster: it.cluster };
+      byKey.set(it.cluster, g); out.push(g);
+    } else byKey.get(it.cluster).others.push(it);
+  }
+  // The lead is the one first seen: the original report, not whoever copied it loudest.
+  for (const g of byKey.values()) {
+    const all = [g.lead, ...g.others].sort((a, b) =>
+      new Date(a.firstSeen || 0).getTime() - new Date(b.firstSeen || 0).getTime());
+    g.lead = all[0]; g.others = all.slice(1);
+  }
+  return out;
+}
+
+export async function brokenClusters() { return (await get('meta', 'brokenClusters'))?.v || []; }
+export async function breakCluster(id) {
+  const cur = await brokenClusters();
+  if (!cur.includes(id)) await put('meta', { id: 'brokenClusters', v: [...cur, id] });
+  return brokenClusters();
+}
+export async function rejoinCluster(id) {
+  const cur = await brokenClusters();
+  await put('meta', { id: 'brokenClusters', v: cur.filter(x => x !== id) });
+  return brokenClusters();
+}
+
+/* ---------- refresh ----------
+   Scraping happens in GitHub Actions, never in the browser. With a token the app can ask the
+   workflow to run; without one it tells you the command to run yourself. It never pretends. */
+export const WORKFLOW = 'scrape.yml';
+
+/** @returns {{mode: 'dispatch'|'manual', repo?: string, command: string}} */
+export function refreshPlan(settings) {
+  const repo = (settings?.githubRepo || '').trim();
+  const token = (settings?.githubToken || '').trim();
+  return (repo && token)
+    ? { mode: 'dispatch', repo, command: `gh workflow run ${WORKFLOW} --repo ${repo}` }
+    : { mode: 'manual', command: 'npm run scrape' };
+}
+
+/**
+ * Ask GitHub to run the scrape workflow. Returns what happened in words the UI can show.
+ * The token never leaves this function except in the Authorization header of that one request.
+ * `fetchImpl` is narrowed to what this actually uses, so a test can pass a two-field stub.
+ * @param {object} settings
+ * @param {(url: string, opts: object) => Promise<{status: number, text: () => Promise<string>}>} [fetchImpl]
+ */
+export async function requestRefresh(settings, fetchImpl = fetch) {
+  const plan = refreshPlan(settings);
+  if (plan.mode === 'manual') {
+    return { ok: false, mode: 'manual', message: 'No repository and token set. Run the scrape yourself.', plan };
+  }
+  const url = `https://api.github.com/repos/${plan.repo}/actions/workflows/${WORKFLOW}/dispatches`;
+  try {
+    const res = await fetchImpl(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${settings.githubToken.trim()}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({ ref: settings.githubBranch?.trim() || 'main' })
+    });
+    if (res.status === 204) {
+      return { ok: true, mode: 'dispatch', message: 'GitHub accepted the request. New data lands when the run finishes.', plan };
+    }
+    const body = await res.text().catch(() => '');
+    return { ok: false, mode: 'dispatch', status: res.status, plan,
+      message: res.status === 401 || res.status === 403
+        ? 'GitHub refused the token. It needs the actions:write scope on that repository.'
+        : `GitHub answered ${res.status}. ${body.slice(0, 120)}` };
+  } catch (e) {
+    return { ok: false, mode: 'dispatch', plan, message: `Could not reach GitHub: ${e.message}` };
+  }
+}
+
 /* ---------- the desk: what each saved thing becomes when it lands on the wood ----------
    A hackathon is a polaroid, a job an index card, news a clipping, a note a sticky, a scheme a torn
    sheet. The kind drives size and look, so the desk reads as objects rather than as a list. */

@@ -93,6 +93,7 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 3 — Hackathons + News | done |
 | 4 — Notes + Calendar | done |
 | 5–6 — Desk and Wall | done |
-| 7–8 — shared logic, ethical engagement | not started |
+| 7 — shared logic | done |
+| 8 — ethical engagement | not started |
 | 9 — scrapers | not started; `data/*.json` is fictional seed data, every row carries `_mock: true` |
 | 10 — PWA, accessibility, polish | not started |

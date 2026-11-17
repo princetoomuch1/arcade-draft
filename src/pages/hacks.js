@@ -6,6 +6,7 @@
 import { mark, bump, STATE, applyFacets, facetValue, FACETS, get, put, del } from '../store.js';
 import { pinSvg } from '../sprites.js';
 import { coordsOf, distanceKm, bearing, project, BOXES, HOME } from '../geo.js';
+import { receiptNode } from '../receipt.js';
 import { metrics } from '../u.js';
 
 export const title = 'Hacks';
@@ -375,6 +376,12 @@ export async function render(ctx) {
     box.append(skills);
 
     box.append(brief(it));
+    box.append(receiptNode(it, {
+      onReport: async (reason, note) => {
+        await put('meta', { id: 'report-' + it.id, v: { itemId: it.id, title: it.title, reason, note, at: Date.now() } });
+        ctx.toast('NOTED ON THIS MACHINE ONLY', 'is-ghost');
+      }
+    }));
     box.append(partyUp(it));
     const acts = el('div');
     acts.style.cssText = 'display:flex;gap:calc(3*var(--u));flex-wrap:wrap';

@@ -75,3 +75,23 @@ textarea.field { width:100%; min-height:calc(60*var(--u)); resize:vertical; }
 .interest .w i { display:block; height:100%; background:var(--lime); }
 .interest.is-chose .w i { background:var(--gold); }
 .interest.is-muted { color:var(--muted); text-decoration:line-through; }
+
+/* ---- the freshness receipt, used on every page that shows a scraped row ---- */
+.receipt { display:grid; gap:calc(2*var(--u)); justify-items:start; margin-top:calc(3*var(--u)); }
+.rdot { width:calc(4*var(--u)); height:calc(4*var(--u)); display:inline-block; border:var(--u) solid var(--ink); }
+.rdot.r-fresh { background:var(--lime); }
+.rdot.r-aging { background:var(--gold); }
+.rdot.r-stale { background:var(--orange); }
+.rdot.r-unknown { background:var(--muted); }
+.rlab { color:var(--muted); }
+.rrows { display:grid; gap:calc(1*var(--u)); }
+.rrow { display:flex; gap:calc(4*var(--u)); }
+.rrow .rk { color:var(--muted); min-width:calc(36*var(--u)); }
+.rrow .rv { color:var(--text); }
+.rform { display:flex; flex-wrap:wrap; gap:calc(2*var(--u)); align-items:center; }
+
+/* ---- interest inspector, refresh ---- */
+.igroup { display:block; color:var(--cyan); margin:calc(4*var(--u)) 0 calc(2*var(--u)); }
+.refresh-state { color:var(--gold); }
+.cmdline { display:block; background:var(--bg); color:var(--lime); border:var(--u) solid var(--edge);
+  padding:calc(2*var(--u)); font-family:'VT323',monospace; font-size:calc(16*var(--u)); }
