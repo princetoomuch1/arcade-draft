@@ -36,11 +36,21 @@ export default [
     rules: { 'no-unused-vars': ['error', { args: 'none' }] }
   },
   {
-    files: ['tests/**/*.js', 'e2e/**/*.js'],
+    files: ['tests/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
       globals: { ...globals.node, ...globals.browser, ...globals.vitest }
+    },
+    rules: { 'no-unused-vars': ['error', { args: 'none' }] }
+  },
+  {
+    // Playwright specs are CommonJS, and their page.evaluate bodies run in the browser.
+    files: ['e2e/**/*.cjs', 'playwright.config.cjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.browser }
     },
     rules: { 'no-unused-vars': ['error', { args: 'none' }] }
   }

@@ -1,4 +1,7 @@
-import { test, expect } from '@playwright/test';
+/* CommonJS on purpose: loading an ESM spec through Playwright's esmLoaderHost hangs
+   with no output on this machine (Windows, "type": "module", path with spaces).
+   Plain require() skips that loader entirely. */
+const { test, expect } = require('@playwright/test');
 
 /* The critical flows, driven as a person would drive them. Each starts from a clean database so
    one test cannot quietly depend on another's leftovers. */
@@ -129,7 +132,8 @@ test('undo brings back a crumpled item', async ({ page }) => {
   await page.locator('.paper .tosser').click();
   await page.waitForTimeout(1000);
   await expect(page.locator('.paper')).toHaveCount(0);
-  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'u' })));
+  // The toast carries the UNDO, which is how a person would actually reach it.
+  await page.locator('.toast-undo').click();
   await page.waitForTimeout(1000);
   await expect(page.locator('.paper')).toHaveCount(1);
 });

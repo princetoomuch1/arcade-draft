@@ -149,7 +149,7 @@ export async function render(ctx) {
         p.state = S.STATE.DRAWER; p.drawer_at = Date.now(); p.status = 'archived';
         await save(p); ctx.refreshChrome(); paint();
         UNDO.record('crumpled ' + s.title, async () => { Object.assign(p, before); await save(p); ctx.refreshChrome(); paint(); });
-        ctx.toast('CRUMPLED — PRESS U TO UNDO', 'is-ghost');
+        ctx.toast('CRUMPLED', 'is-ghost', { undo: true });
       }, ctx.settings?.reduceMotion ? 0 : 220);
     };
     c.append(toss);
@@ -291,7 +291,7 @@ export async function render(ctx) {
       gone.onclick = async () => {
         if (gone.dataset.armed !== '1') { gone.dataset.armed = '1'; gone.textContent = 'SURE?'; return; }
         await binForever(p);
-        ctx.toast('BINNED — UNDO BIN IS IN THE TOOLBAR FOR 15 SECONDS', 'is-orange');
+        ctx.toast('BINNED', 'is-orange', { undo: true });
       };
       row.append(back, gone); drawerPanel.append(row);
     }

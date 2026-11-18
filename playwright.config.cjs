@@ -1,8 +1,9 @@
-import { defineConfig, devices } from '@playwright/test';
+/* CommonJS on purpose. An ESM config in a "type": "module" package sends Playwright down a
+   config-reload path that hangs on this machine (Windows, path with spaces) with no output at all.
+   A .cjs config skips that path. The spec files stay ESM; Playwright transpiles those itself. */
+const { defineConfig, devices } = require('@playwright/test');
 
-/* One browser, one worker: these tests share a dev server and an IndexedDB, and a flaky suite
-   that passes on a retry is worse than no suite at all. */
-export default defineConfig({
+module.exports = defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
   workers: 1,

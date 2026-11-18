@@ -322,8 +322,12 @@ export async function render(ctx) {
     { style: 'color:var(--ink-desk)' }));
     if (!ch) {
       const t = el('input', 'field'); t.id = 'coop-title'; t.placeholder = 'e.g. three applications';
+      t.setAttribute('aria-label', 'What the challenge is');
       const n = el('input', 'field'); n.id = 'coop-target'; n.type = 'number'; n.min = '1'; n.value = '3';
+      n.setAttribute('aria-label', 'How many to aim for');
+      n.title = 'How many to aim for';
       const who = el('input', 'field'); who.id = 'coop-who'; who.placeholder = 'with whom (just a name for you)';
+      who.setAttribute('aria-label', 'Who you are doing it with');
       const go = el('button', 'btn t-small', 'START IT');
       go.onclick = async () => {
         if (!t.value.trim()) { t.focus(); return; }

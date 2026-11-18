@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+/* CommonJS on purpose: loading an ESM spec through Playwright's esmLoaderHost hangs
+   with no output on this machine (Windows, "type": "module", path with spaces).
+   Plain require() skips that loader entirely. */
+const { test, expect } = require('@playwright/test');
+const AxeBuilder = require('@axe-core/playwright').default;
 
 /* axe on every route. Critical and serious both fail: this app is small enough that letting
    "serious" through would only be a way of not fixing things. */

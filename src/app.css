@@ -186,3 +186,6 @@
 .tour p { margin:0; color:var(--text); }
 .tour ul { margin:0; padding-left:calc(6*var(--u)); color:var(--text); display:grid; gap:calc(2*var(--u)); }
 .tour b { color:var(--gold); font-weight:400; }
+
+/* the UNDO affordance inside a toast */
+.toast-undo { margin-left:calc(3*var(--u)); }

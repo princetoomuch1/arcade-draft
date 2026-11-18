@@ -250,6 +250,8 @@ export async function render(ctx) {
     r1.append(el('span', 't-small', 'ALIGNMENT'));
     const sl = el('div', 'notches');
     sl.tabIndex = 0; sl.setAttribute('role', 'slider');
+    // A slider with no name is a slider a screen reader cannot describe. axe caught this one.
+    sl.setAttribute('aria-label', 'How closely the drop should match your interests');
     sl.setAttribute('aria-valuemin', '1'); sl.setAttribute('aria-valuemax', '3');
     const idx = ALIGNS.indexOf(align);
     sl.setAttribute('aria-valuenow', String(idx + 1));

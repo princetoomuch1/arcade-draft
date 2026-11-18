@@ -898,3 +898,52 @@ hang. Everything else is green. Nothing claims the e2e suite passed, because it 
 
 Options for the next session: try a CommonJS config as `playwright.config.cts`; try running from a
 path without spaces; or drop Playwright and cover the flows with jsdom in Vitest, which already runs.
+
+---
+
+## 2026-11-18 — Phase 11b, the Playwright blocker, solved
+
+**Cause: loading an ESM spec file, not the config.** The CommonJS config alone did not fix it.
+Evidence, in order:
+
+1. `playwright.config.cjs` instead of `.js` — still hung. So the config format was not it.
+2. A throwaway project in a path with no spaces — Playwright ran and errored **properly in under a
+   second** (it could not resolve `@playwright/test` from a temp dir). So Playwright works here, and
+   the path and the spaces were not it either.
+3. Each spec listed on its own — **both** hung, so it was not `@axe-core/playwright`.
+
+That left the one thing the two specs shared: ESM `.js` files inside a `"type": "module"` package,
+loaded through Playwright's `esmLoaderHost`. Renaming them to `.cjs` with `require` skips that
+loader. `--list` then returned instantly and the suite ran.
+
+Both spec files carry a comment saying why they are CommonJS, so nobody "tidies" them back.
+
+### Three real bugs the suite found on its first green run
+
+1. **`axe: /#/feed` — serious, `aria-input-field-name`.** The alignment slider had
+   `role="slider"` and no accessible name, so a screen reader could announce its value but never
+   say what it was for. Given one.
+2. **`axe: /#/wall` — critical, `label`.** The co-op challenge's number input had no label at all.
+   Given one, and so were the other two inputs in that row while I was there.
+3. **Undo was keyboard-only, and the key could be killed by sound.** `onKey` calls `audioInit()`
+   first, and a browser that refuses an AudioContext (no gesture yet, autoplay policy, headless)
+   threw before the key was ever read — so every shortcut died with the speaker. Wrapped in
+   try/catch: sound is a nicety, the keyboard is not.
+   The deeper miss was mine: A9 asked for *"toast with Undo for 6s"* and I had built the stack but
+   only bound it to `U`. An undo offered solely as a shortcut is an undo most people never find.
+   The toast now carries an UNDO button and stays 6 seconds when it does.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        242 tests, 14 files
+ audit       pass        22 modules, 11 stylesheets
+ data        pass        4 files, 25 rows
+ e2e         pass        25 tests - 11 flows, 13 axe routes, 1 keyboard sweep
+```
+
+`e2e` is back in `tools/verify.mjs`. Every acceptance item for Phase 11 is now met except the three
+Actions running green on a real branch, which needs a GitHub remote that does not exist yet.

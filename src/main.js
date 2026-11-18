@@ -260,7 +260,9 @@ function onKey(e) {
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
   const k = e.key.toLowerCase();
-  audioInit(); audioTouch();
+  // Sound is a nicety; the keyboard is not. A browser that refuses an AudioContext (no gesture
+  // yet, autoplay policy, headless) must not take key handling down with it.
+  try { audioInit(); audioTouch(); } catch { /* keep going without sound */ }
   if (k === 'f' && e.shiftKey) { e.preventDefault(); toggleFullscreen(); return; }
   if (KEYS[k]) { e.preventDefault(); SFX.click(); return go(KEYS[k]); }
   if (k === 'u') {
@@ -283,14 +285,26 @@ export function announce(text) {
   if (live) { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 50); }
 }
 
-export function toast(text, kind = '') {
+export function toast(text, kind = '', opts = {}) {
   announce(text);
   const host = $('.crt-window'); if (!host) return;
   const t = el('div', `chip t-label z-toast ${kind}`, text);
   t.style.position = 'absolute'; t.style.bottom = 'calc(16 * var(--u))'; t.style.left = 'calc(6 * var(--u))';
   t.classList.add('corner-2', 'sh-card');
+
+  // An undo offered only as a keyboard shortcut is an undo most people never find.
+  if (opts.undo) {
+    const b = el('button', 'toast-undo btn t-small', 'UNDO');
+    b.onclick = async () => {
+      const label = await UNDO.undoLast();
+      t.remove();
+      if (label) { SFX.save(); toast('UNDONE: ' + label.toUpperCase(), 'is-lime'); }
+    };
+    t.append(' ', b);
+  }
+
   host.append(t);
-  setTimeout(() => t.remove(), 2600);
+  setTimeout(() => t.remove(), opts.undo ? 6000 : 2600);
 }
 
 /* ---------- 7.4 boot: cabinet -> INSERT COIN -> PRESS START -> menu ---------- */
