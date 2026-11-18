@@ -1,0 +1,12 @@
+# Copy-audit allowlist. Each line is an exact UI string that may contain a banned phrase,
+# with the reason it is allowed. Anything not listed here fails the build.
+#
+# "Back tomorrow." — an ending, not a nag. The caught-up state, agreed in Phase 11.
+Back tomorrow.
+# "EXPIRES ... IN n DAYS" — a real deadline from the source, rendered only by the freshness
+# receipt and only from item.expiresAt / item.deadline. tests/receipt.test.js proves the number
+# comes from the data and is never a hardcoded string.
+EXPIRES
+# These two state the rule itself rather than breaking it.
+NOTHING HERE COUNTS TIME SPENT
+No load more here

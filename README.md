@@ -97,3 +97,38 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 8 — ethical engagement | done |
 | 9 — scrape pipeline | built, no sites configured. Use `npm run check-source -- <url>` before adding one. `data/*.json` is still fictional seed data, every row carries `_mock: true` |
 | 10 — PWA, accessibility, polish | done. Desktop only, by decision: installable and offline, but a phone still shows RESIZE THE WINDOW |
+
+## Back up and restore
+
+Everything personal lives in IndexedDB on this machine and is **not** in the repository.
+Options → DATA → EXPORT BACKUP writes one JSON file. IMPORT A BACKUP shows what the file would do
+before writing anything, then offers MERGE (the file wins a clash) or REPLACE (clears first).
+
+Clearing site data deletes it all. Export first.
+
+## Deploying
+
+See [docs/deploy.md](docs/deploy.md): first deploy, updates, rollback, refreshing the data, and the
+service-worker cache gotcha.
+
+## Credits and licences
+
+In the app at MORE → CREDITS, and in [src/pages/credits.js](src/pages/credits.js). Four Google fonts
+under the SIL Open Font License; every icon, texture, company mark and sound is generated in this
+repository. Build tools are MIT / Apache-2.0 / MPL-2.0. Nothing is paid for.
+
+## Data retention
+
+- A saved item whose deadline has passed moves to the drawer, never deleted.
+- The drawer holds removed items for 14 days.
+- Anything archived past 90 days is **offered** for cleanup in Options, never swept.
+- Storage: a warning at 50 MB, writes blocked at 80 MB with a message saying what to do.
+- A soft cap of 5,000 active items prompts you to archive; nothing is pruned for you.
+
+## Known limitations
+
+- Desktop only. A phone shows RESIZE THE WINDOW; that is a decision, not a gap.
+- No scrape sources configured, so `data/*.json` is fictional seed data (`_mock: true` on every row).
+- `sw.js` is not covered by `tsc` because its global scope conflicts with the DOM lib; ESLint checks it.
+- `verify.sh` from the build spec is `tools/verify.mjs` here: same steps and exit codes, but Node so
+  it runs on Windows.

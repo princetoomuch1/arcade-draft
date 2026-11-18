@@ -13,6 +13,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src/**/*.js", "tools/**/*.mjs", "scrapers/**/*.mjs", "tests/**/*.js"],
+  "include": ["src/**/*.js", "tools/**/*.mjs", "scrapers/**/*.mjs", "tests/**/*.js", "playwright.config.js"],
   "exclude": ["node_modules", "dist"]
 }

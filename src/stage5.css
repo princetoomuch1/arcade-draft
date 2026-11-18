@@ -95,3 +95,14 @@ textarea.field { width:100%; min-height:calc(60*var(--u)); resize:vertical; }
 .refresh-state { color:var(--gold); }
 .cmdline { display:block; background:var(--bg); color:var(--lime); border:var(--u) solid var(--edge);
   padding:calc(2*var(--u)); font-family:'VT323',monospace; font-size:calc(16*var(--u)); }
+
+/* storage report line in Options, coloured by how close the limits are */
+.storage { color:var(--muted); }
+
+/* credits */
+.credit-list { display:grid; gap:calc(2*var(--u)); margin-bottom:calc(5*var(--u)); max-width:calc(220*var(--u)); }
+.credit { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); align-items:baseline; }
+.credit .cn { color:var(--text); min-width:calc(48*var(--u)); }
+.credit a.cn { color:var(--cyan); }
+.credit .cw { color:var(--muted); flex:1 1 calc(80*var(--u)); }
+.credit .cl { color:var(--lime); }

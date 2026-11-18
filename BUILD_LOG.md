@@ -824,3 +824,77 @@ Proved against a local fixture server rather than by probing anyone's site: a pe
 the entry and reported the 2 s Crawl-delay; a disallowed path was refused with
 `REFUSED — robots.txt disallows /blocked` and nothing beyond robots.txt was fetched; an HTML page
 that advertises a feed was redirected to the feed.
+
+---
+
+## 2026-11-18 — Phase 11, completion artifacts
+
+Most of Part A already existed under other names, so this was mostly reconciling. The four conflicts
+were resolved as agreed.
+
+**A6 snake_case: rejected.** The spec proposed `source_url`, `posted_at`, `last_checked_at`. The
+schemas in `schemas/` describe the data as it actually is — camelCase (`url`, `firstSeen`,
+`lastSeen`) — because nine pages and the scrapers already read those names and a schema should
+describe reality, not a guess. `schemas/share.json` uses camelCase too, so there is one convention.
+
+### Built
+
+- **`schemas/`** — `feeditem.json`, `datafile.json`, `share.json`, draft-07.
+- **`tools/validate-data.mjs`** — a hand-written validator (no ajv: zero runtime dependencies is the
+  rule, and this must still work in five years) covering the draft-07 subset the schemas use, plus
+  invariants a schema cannot state: duplicate ids across files, expiry before its own deadline,
+  last-seen before first-seen, end before start, a row with no source host. **4 files, 25 rows, 25
+  unique ids, valid.**
+- **Copy audit extended** to the full banned list, with `tools/copy-audit.allowlist.txt` naming each
+  exception and its reason. Proved it bites: four planted lines produced five failures across
+  urgency, streak, nag-to-return and leaderboard.
+  - `"Back tomorrow."` allowlisted as agreed — an ending, not a nag. `come back` stays banned.
+  - `EXPIRES` allowlisted, guarded by **`tests/receipt.test.js`** (9 tests): the countdown must equal
+    what the data says, there is no countdown when no date was given, a passed date reads
+    `ALREADY PASSED`, and exactly one countdown appears per receipt.
+- **Fixed while writing that guard:** the receipt said `IN 1 DAYS`. Now `TOMORROW OR SOONER`.
+- **`src/undo.js`** — a 20-deep global undo stack, in memory only and deliberately not persisted: an
+  undo still offered tomorrow is a promise this app cannot keep. Wired to crumple and bin, and to
+  the `U` key anywhere in the app. 6 tests.
+- **Retention and storage guard** in the store: `staleArchive()` offers anything past 90 days in the
+  drawer but never sweeps it; `storageLevel()` warns at 50 MB and blocks writes at 80 MB with a
+  message saying what to do; `activeCount()` flags the 5,000 cap and prunes nothing. 15 tests.
+- **Import**, with preview — Options → DATA shows what a backup would do store by store (incoming,
+  here, same, new) before writing, then offers MERGE or REPLACE, with REPLACE asking twice.
+  Export → import round-trips notes, goals, applications, interests and settings losslessly.
+- **`src/pages/credits.js`** at MORE → CREDITS: four OFL fonts, everything else generated in this
+  repo, build tools with their licences, and a plain statement that personal data never leaves.
+- **`docs/deploy.md`** — first deploy, updates, rollback, refreshing, backup, and the
+  service-worker-cache gotcha. **README** gained backup, deploy, credits, retention and limitations.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        239 tests, 14 files
+ audit       pass        22 modules, 11 stylesheets, copy audit included
+ data        pass        4 files, 25 rows
+```
+
+### BLOCKED — Playwright will not run on this machine
+
+`e2e/flows.spec.js` (11 critical flows) and `e2e/a11y.spec.js` (axe on all 13 routes plus a
+keyboard-reach check) are written and committed. They do not run here.
+
+`npx playwright test --list` **hangs with no output and no error**, and is killed by a timeout.
+Three attempts, per the stop-and-ask rule:
+
+1. Ran the suite — hung past ten minutes with nothing printed.
+2. Ran a single test, then `--list` with stdout and stderr captured to files — both empty, `rc=124`.
+3. Isolated it: the CLI itself works (`--version` prints 1.49.1, and a deliberately bad `--config`
+   produces a proper error), but loading **our** `playwright.config.js` hangs. Suspicion is
+   Playwright's config-reload path with an ESM config in a `"type": "module"` package on Windows,
+   under a path containing spaces — unconfirmed.
+
+**`e2e` is deliberately not in `tools/verify.mjs`**, with a comment saying why, so verify does not
+hang. Everything else is green. Nothing claims the e2e suite passed, because it has not run.
+
+Options for the next session: try a CommonJS config as `playwright.config.cts`; try running from a
+path without spaces; or drop Playwright and cover the flows with jsdom in Vitest, which already runs.

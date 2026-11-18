@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['node_modules/**', 'dist/**', 'coverage/**'] },
+  { ignores: ['node_modules/**', 'dist/**', 'coverage/**', 'test-results/**', 'playwright-report/**'] },
   js.configs.recommended,
   {
     files: ['src/**/*.js'],
@@ -27,7 +27,7 @@ export default [
     }
   },
   {
-    files: ['tools/**/*.mjs', 'scrapers/**/*.mjs', 'eslint.config.js', 'vitest.config.js'],
+    files: ['tools/**/*.mjs', 'scrapers/**/*.mjs', 'eslint.config.js', 'vitest.config.js', 'playwright.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -36,7 +36,7 @@ export default [
     rules: { 'no-unused-vars': ['error', { args: 'none' }] }
   },
   {
-    files: ['tests/**/*.js'],
+    files: ['tests/**/*.js', 'e2e/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

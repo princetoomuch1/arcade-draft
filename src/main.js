@@ -3,6 +3,7 @@
 
 import { apply, metrics, FRAME_U } from './u.js';
 import * as S from './store.js';
+import * as UNDO from './undo.js';
 import { init as audioInit, SFX, setVolume, setMuted, setHoverBlips, toggleMute, touch as audioTouch } from './sound.js';
 
 const $  = (s, r = document) => r.querySelector(s);
@@ -20,6 +21,7 @@ const PAGES = {
   cal:     () => import('./pages/calendar.js'),
   apps:    () => import('./pages/apps.js'),
   opts:    () => import('./pages/options.js'),
+  credits: () => import('./pages/credits.js'),
   desk:    () => import('./desk.js'),
   wall:    () => import('./wall.js')
 };
@@ -243,7 +245,7 @@ async function mount(name, params) {
 
 function renderKeybar(extra = []) {
   const bar = $('#keybar'); if (!bar) return;
-  const base = [['F','FEED'],['J','JOBS'],['H','HACKS'],['N','NEWS'],['M','MORE'],['D','DESK'],['W','WALL']];
+  const base = [['F','FEED'],['J','JOBS'],['H','HACKS'],['N','NEWS'],['M','MORE'],['D','DESK'],['W','WALL'],['U','UNDO']];
   bar.innerHTML = '';
   for (const [k, name] of [...base, ...extra]) {
     const s = el('span', 'k');
@@ -261,6 +263,14 @@ function onKey(e) {
   audioInit(); audioTouch();
   if (k === 'f' && e.shiftKey) { e.preventDefault(); toggleFullscreen(); return; }
   if (KEYS[k]) { e.preventDefault(); SFX.click(); return go(KEYS[k]); }
+  if (k === 'u') {
+    e.preventDefault();
+    UNDO.undoLast().then(label => {
+      if (label) { SFX.save(); toast('UNDONE: ' + label.toUpperCase(), 'is-lime'); }
+      else toast('NOTHING TO UNDO', 'is-ghost');
+    });
+    return;
+  }
   if (k === 'escape') { e.preventDefault(); SFX.back(); return go(HOME); }
   if (k === 'm' && e.shiftKey) { e.preventDefault(); const m = toggleMute(); const p = $('#pause'); if (p) p.textContent = m ? 'MUTED' : 'PAUSE'; return; }
   // page-local keys get the event through this custom event

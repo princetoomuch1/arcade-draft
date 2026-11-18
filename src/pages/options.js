@@ -219,6 +219,62 @@ export async function render(ctx) {
         const a = el('a'); a.href = url; a.download = `arcade-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       };
+      /* Import: preview first, always. Nothing is written until the user picks merge or replace. */
+      const file = el('input'); file.type = 'file'; file.accept = 'application/json';
+      file.hidden = true; file.id = 'import-file';
+      const host = el('div');
+      file.onchange = async () => {
+        const f = file.files?.[0]; if (!f) return;
+        let backup;
+        try { backup = JSON.parse(await f.text()); }
+        catch { ctx.toast('THAT FILE IS NOT JSON', 'is-orange'); file.value = ''; return; }
+
+        const current = {};
+        for (const st of ['personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans']) {
+          current[st] = await S.all(st);
+        }
+        const pre = S.previewImport(backup, current);
+        host.innerHTML = '';
+        if (!pre.ok) { host.append(Object.assign(el('p', 't-small', pre.why), { style: 'color:var(--orange)' })); file.value = ''; return; }
+
+        host.append(el('h3', 'igroup t-label', 'WHAT THIS BACKUP WOULD DO'));
+        if (pre.exported_at) host.append(el('p', 't-small', `Taken ${new Date(pre.exported_at).toLocaleString('en-IN')}`));
+        for (const r of pre.rows) {
+          if (!r.incoming && !r.here) continue;
+          const line = el('p', 't-small',
+            `${r.store.toUpperCase()}: ${r.incoming} in the file, ${r.here} here, ${r.overlap} the same, ${r.newRows} new`);
+          host.append(line);
+        }
+        const row = el('div', 'form-row');
+        const merge = el('button', 'btn is-primary t-small', 'MERGE');
+        merge.title = 'Keep what is here. Where both have the same thing, the file wins.';
+        merge.onclick = async () => {
+          const r = await S.importBackup(backup, 'merge');
+          ctx.toast(`MERGED ${r.written} RECORDS`, 'is-lime'); host.innerHTML = ''; file.value = '';
+        };
+        const replace = el('button', 'btn t-small', 'REPLACE');
+        replace.title = 'Empty these stores first, then write the file. Export yours first if unsure.';
+        replace.onclick = async () => {
+          if (replace.dataset.armed !== '1') { replace.dataset.armed = '1'; replace.textContent = 'THIS CLEARS WHAT IS HERE. CLICK AGAIN'; return; }
+          const r = await S.importBackup(backup, 'replace');
+          ctx.toast(`REPLACED — ${r.cleared} CLEARED, ${r.written} WRITTEN`, 'is-orange');
+          host.innerHTML = ''; file.value = '';
+        };
+        const no = el('button', 'btn is-ghost t-small', 'CANCEL');
+        no.onclick = () => { host.innerHTML = ''; file.value = ''; };
+        row.append(merge, replace, no);
+        host.append(row);
+      };
+      const imp = el('button', 'btn t-small', 'IMPORT A BACKUP');
+      imp.onclick = () => file.click();
+
+      /* How much room this is taking, and what happens at the limits. */
+      const storage = el('p', 'storage t-small', 'CHECKING STORAGE…');
+      S.storageReport().then(r => {
+        storage.textContent = r.message.toUpperCase();
+        storage.style.color = r.level === 'block' ? 'var(--danger)' : r.level === 'warn' ? 'var(--orange)' : 'var(--muted)';
+      });
+
       const wipe = el('button', 'btn t-small', 'ERASE ALL MY DATA');
       wipe.style.color = 'var(--danger)';
       wipe.onclick = async () => {
@@ -226,7 +282,7 @@ export async function render(ctx) {
         for (const s of ['personal', 'notes', 'goals', 'apps', 'weights', 'meta']) for (const r of await S.all(s)) await S.del(s, r.id);
         ctx.SFX.del(); location.reload();
       };
-      return [note, exp, wipe];
+      return [note, exp, imp, file, host, storage, wipe];
     }]
   ];
 

@@ -920,3 +920,100 @@ export async function markActiveDay(now = new Date()) {
   return { fresh, count: rec.length, index: rec.length - 1 };
 }
 export const activeDays = () => get('meta', 'activeDays').then(r => (r?.v || []));
+
+/* ---------- retention and storage ----------
+   Two rules, both the same rule really: this app does not throw your things away.
+   Something old is offered for cleanup, never swept; something large is refused with a reason,
+   never silently dropped. */
+
+export const RETENTION = { archivePromptDays: 90, warnBytes: 50e6, blockBytes: 80e6, maxActive: 5000 };
+
+/** Archived records sitting past the prompt threshold. Offered for cleanup, never auto-deleted. */
+export function staleArchive(records, now = Date.now()) {
+  const cut = RETENTION.archivePromptDays * 864e5;
+  return records.filter(p => p.state === STATE.DRAWER && p.drawer_at && now - p.drawer_at > cut);
+}
+
+/** @returns {Promise<{bytes: number, quota: number, level: string, message: string}>} */
+export async function storageReport() {
+  let bytes = 0, quota = 0;
+  try {
+    const est = await navigator.storage?.estimate?.();
+    bytes = est?.usage ?? 0; quota = est?.quota ?? 0;
+  } catch { /* an estimate we cannot get is reported as unknown, not as zero-and-fine */ }
+  return { bytes, quota, ...storageLevel(bytes) };
+}
+
+/** Pure, so the thresholds are tested rather than trusted.
+ *  @returns {{level: string, message: string}} */
+export function storageLevel(bytes) {
+  const mb = n => `${Math.round(n / 1e6)} MB`;
+  if (bytes >= RETENTION.blockBytes) {
+    return { level: 'block',
+      message: `${mb(bytes)} stored. New writes are blocked until you export a backup and clear some space.` };
+  }
+  if (bytes >= RETENTION.warnBytes) {
+    return { level: 'warn', message: `${mb(bytes)} stored. Worth exporting a backup and tidying the drawer.` };
+  }
+  return { level: 'ok', message: `${mb(bytes)} stored.` };
+}
+
+/** Called before any write that could grow the database. Throws rather than failing quietly. */
+export async function assertWritable() {
+  const r = await storageReport();
+  if (r.level === 'block') throw new Error(r.message);
+  return r;
+}
+
+/** How close the device-side record count is to the cap. Prompts, never prunes. */
+export function activeCount(records) {
+  const n = records.filter(p => [STATE.SAVED, STATE.PLANNED, STATE.PINNED, STATE.DONE].includes(p.state)).length;
+  return { count: n, cap: RETENTION.maxActive, over: n > RETENTION.maxActive };
+}
+
+/* ---------- backup: export and import ---------- */
+export const BACKUP_VERSION = 1;
+const BACKUP_STORES = ['personal', 'notes', 'goals', 'apps', 'weights', 'meta', 'wallpins', 'plans'];
+
+export async function exportBackup() {
+  const data = {};
+  for (const s of BACKUP_STORES) data[s] = await all(s);
+  return { version: BACKUP_VERSION, exported_at: new Date().toISOString(), data };
+}
+
+/** What an import would do, worked out before anything is written. */
+export function previewImport(backup, current) {
+  if (!backup || typeof backup !== 'object') return { ok: false, why: 'That file is not a backup.' };
+  if (backup.version !== BACKUP_VERSION) {
+    return { ok: false, why: `That backup is version ${backup.version ?? 'unknown'}; this app writes version ${BACKUP_VERSION}.` };
+  }
+  if (!backup.data || typeof backup.data !== 'object') return { ok: false, why: 'That backup has no data in it.' };
+
+  const rows = [];
+  for (const s of BACKUP_STORES) {
+    const incoming = Array.isArray(backup.data[s]) ? backup.data[s] : [];
+    const here = current?.[s] ?? [];
+    const hereIds = new Set(here.map(r => r.id));
+    const overlap = incoming.filter(r => hereIds.has(r.id)).length;
+    rows.push({ store: s, incoming: incoming.length, here: here.length, overlap, newRows: incoming.length - overlap });
+  }
+  return { ok: true, exported_at: backup.exported_at ?? null, rows };
+}
+
+/**
+ * Apply a backup. `mode` is 'merge' (incoming wins on a clash, nothing else touched) or
+ * 'replace' (the listed stores are emptied first). Never called without the preview being shown.
+ */
+export async function importBackup(backup, mode = 'merge') {
+  const pre = previewImport(backup, null);
+  if (!pre.ok) throw new Error(pre.why);
+  let written = 0, cleared = 0;
+  for (const s of BACKUP_STORES) {
+    const incoming = Array.isArray(backup.data[s]) ? backup.data[s] : [];
+    if (mode === 'replace') {
+      for (const r of await all(s)) { await del(s, r.id); cleared++; }
+    }
+    for (const r of incoming) { if (r && r.id != null) { await put(s, r); written++; } }
+  }
+  return { written, cleared, mode };
+}

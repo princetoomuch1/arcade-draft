@@ -6,3 +6,6 @@ coverage/
 .DS_Store
 Thumbs.db
 data/.http-cache.json
+test-results/
+playwright-report/
+.playwright/

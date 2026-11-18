@@ -1,12 +1,13 @@
 /* MORE — the four pages that do not get a top-level tab. Built in stage 1. */
 export const title = 'More';
-export const keys = [['1','NOTES'],['2','CAL'],['3','APPS'],['4','OPTS']];
+export const keys = [['1','NOTES'],['2','CAL'],['3','APPS'],['4','OPTS'],['5','CREDITS']];
 
 const ITEMS = [
   ['notes', 'NOTES', 'Project notes, images, links between them'],
   ['cal',   'CALENDAR', 'Quest Log, week load, month grid, year wheel'],
   ['apps',  'APPLICATIONS', 'What you applied to, and what happened'],
-  ['opts',  'OPTIONS', 'Pixel size, sound, motion, interests, data']
+  ['opts',  'OPTIONS', 'Pixel size, sound, motion, interests, data'],
+  ['credits', 'CREDITS', 'Every borrowed thing, with its licence']
 ];
 
 export function render(ctx) {
@@ -41,7 +42,7 @@ export function render(ctx) {
 
   const onKey = e => {
     const n = Number(e.detail.key);
-    if (n >= 1 && n <= 4) { ctx.SFX.click(); ctx.go(ITEMS[n - 1][0]); }
+    if (n >= 1 && n <= ITEMS.length) { ctx.SFX.click(); ctx.go(ITEMS[n - 1][0]); }
   };
   document.addEventListener('arcade:key', onKey);
   // the router replaces #page wholesale, so clean up when this node leaves the document

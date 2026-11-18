@@ -8,7 +8,10 @@ const STEPS = [
   ['typecheck', 'npx', ['tsc', '--noEmit']],
   ['lint', 'npx', ['eslint', '.']],
   ['test', 'npx', ['vitest', 'run', '--reporter=dot']],
-  ['audit', 'node', ['tools/audit.mjs']]
+  ['audit', 'node', ['tools/audit.mjs']],
+  ['data', 'node', ['tools/validate-data.mjs']]
+  // 'e2e' is deliberately absent: `playwright test` hangs at config load on this machine and would
+  // hang the whole verify. The specs are in e2e/ and run once that is solved. See BUILD_LOG.
 ];
 
 const results = [];

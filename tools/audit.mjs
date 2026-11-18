@@ -1,9 +1,10 @@
-/* Static audit: catches the failures that otherwise only show up as a blank screen.
+/* Static audit. Catches the failures that otherwise only show up as a blank screen, plus the
+   copy rules, which are only real if something enforces them.
    - every static and dynamic import path resolves
    - every named import exists as an export in the target module
    - every CSS class the JS uses is defined in a stylesheet
-   - no forbidden CSS anywhere (border-radius, linear-gradient, backdrop-filter, blur()),
-     with comments stripped first so the FORBIDDEN list in pixel.css does not trip it
+   - no forbidden CSS anywhere (border-radius, linear-gradient, backdrop-filter, blur())
+   - no manipulative copy, no infinite scroll, no leaderboard
    - every stylesheet is linked from index.html */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,8 +24,10 @@ for (const f of js) {
     if (!m[1]) continue;
     const tt = fs.readFileSync(t, 'utf8');
     for (const n of m[1].split(',').map(s => s.trim().split(/\s+as\s+/)[0]).filter(Boolean)) {
-      const re = new RegExp('export\\s+(const|let|var|function|async\\s+function|class)\\s+' + n + '\\b'
-        + '|export\\s*\\{[^}]*\\b' + n + '\\b');
+      // String.raw so the escapes survive any future copy, paste or heredoc.
+      const re = new RegExp(
+        String.raw`export\s+(const|let|var|function|async\s+function|class)\s+${n}\b`
+        + String.raw`|export\s*\{[^}]*\b${n}\b`);
       if (!re.test(tt)) P('missing export', n, 'in', path.relative('.', t), '<-', path.relative('.', f));
     }
   }
@@ -41,7 +44,6 @@ const defined = new Set([...css.matchAll(/\.([a-z][\w-]*)/g)].map(m => m[1]));
 const used = new Set();
 for (const f of js) {
   const s = fs.readFileSync(f, 'utf8');
-  // \bel( only: without the boundary this also matches del('store', 'some-key') and invents classes
   for (const m of s.matchAll(/(?<![\w.])el\(['"][\w]+['"],\s*['"]([^'"${}]+)['"]/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   for (const m of s.matchAll(/class="([^"${}]+)"/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
   for (const m of s.matchAll(/className\s*=\s*['"]([^'"${}]+)['"]/g)) m[1].split(/\s+/).forEach(c => c && used.add(c));
@@ -61,42 +63,50 @@ for (const [f, s] of raw) {
 }
 
 /* ---- copy audit ----
-   The engagement rules are only real if something enforces them. These are phrases that work by
-   making the reader anxious: a run they could break, a deadline we invented, a scarcity we made up.
-   A real deadline from a source is fine and is said plainly ("EXPIRES IN 12 DAYS"), which is why
-   the patterns below target the manipulation, not the subject. */
+   Phrases that work by making the reader anxious. A real deadline from a source is a fact and is
+   said plainly, which is why the allowlist exists and why it names exact strings with reasons. */
 /** @type {[RegExp, string][]} */
 const BANNED = [
   [/\bdon['’]?t lose\b/i, 'loss framing'],
+  [/\bdon['’]?t miss\b/i, 'loss framing'],
   [/\byou['’]?ll lose\b/i, 'loss framing'],
   [/\blose your\b/i, 'loss framing'],
-  [/\bstreak\b/i, 'streaks are a run to protect; this app has none'],
+  [/\bstreak\b/i, 'a streak is a run to protect; this app has none'],
+  [/\bdays in a row\b/i, 'loss framing'],
   [/\bhurry\b/i, 'manufactured urgency'],
   [/\bact (now|fast)\b/i, 'manufactured urgency'],
   [/\blast chance\b/i, 'manufactured urgency'],
+  [/\blimited time\b/i, 'manufactured urgency'],
+  [/\bonly today\b/i, 'manufactured urgency'],
   [/\bonly \d+ left\b/i, 'manufactured scarcity'],
   [/\bbefore it['’]?s gone\b/i, 'manufactured scarcity'],
-  [/\bkeep your (run|streak)\b/i, 'loss framing'],
-  [/\bbroken streak\b/i, 'loss framing'],
+  [/\bcome back\b/i, 'a nag to return'],
+  [/\bexpires? in\b/i, 'a countdown, unless it is a real source deadline'],
   [/\btime spent\b/i, 'time as a reward'],
   [/\bminutes today\b/i, 'time as a reward'],
-  [/\bload more\b/i, 'endless feed']
+  [/\bload more\b/i, 'endless feed'],
+  [/onEndReached|InfiniteScroll/, 'infinite scroll'],
+  [/[Ll]eaderboard/, 'public ranking']
 ];
-/* Only what a reader can actually see is audited, so comments may name a rule in order to explain
-   it. Comments are blanked (not removed) so reported line numbers still point at the real line. */
+
+/* Only what a reader can see is audited, so a comment may name a rule in order to explain it.
+   Comments are blanked rather than removed, so line numbers still point at the real line. */
+// Built with new RegExp so the character class stays readable: anything but : " ' ` or a backslash.
+const LINE_COMMENT = new RegExp('(^|[^:"\'`\\\\])//[^\\n]*', 'g');
 const stripJs = s => s
   .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, (m, p) => p + ' '.repeat(m.length - p.length));
+  .replace(LINE_COMMENT, (m, p) => p + ' '.repeat(m.length - p.length));
 
-/* UI strings that state the rule itself. Allowed on purpose, each one deliberate. */
-const COPY_EXEMPT = /NOTHING HERE COUNTS TIME SPENT|No load more here/i;
+const ALLOWLIST = fs.readFileSync('tools/copy-audit.allowlist.txt', 'utf8')
+  .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+const allowed = line => ALLOWLIST.some(a => line.includes(a));
 
 for (const f of [...js, 'index.html']) {
   const src = stripJs(fs.readFileSync(f, 'utf8'));
   src.split('\n').forEach((line, i) => {
-    if (COPY_EXEMPT.test(line)) return;
+    if (allowed(line)) return;
     for (const [re, why] of BANNED) {
-      if (re.test(line)) P('manipulative copy', `${f}:${i + 1}`, `(${why})`, line.trim().slice(0, 64));
+      if (re.test(line)) P('manipulative copy', f + ':' + (i + 1), '(' + why + ')', line.trim().slice(0, 60));
     }
   });
 }

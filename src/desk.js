@@ -5,6 +5,7 @@
 import * as S from './store.js';
 import { metrics } from './u.js';
 import { companySprite, raggedEdge } from './sprites.js';
+import * as UNDO from './undo.js';
 
 export const title = 'Desk';
 export const keys = [['SPACE','PICK UP'], ['ARROWS','MOVE']];
@@ -144,8 +145,11 @@ export async function render(ctx) {
       c.classList.add('is-crumple');
       ctx.SFX.crumple();
       setTimeout(async () => {
+        const before = { state: p.state, drawer_at: p.drawer_at, status: p.status };
         p.state = S.STATE.DRAWER; p.drawer_at = Date.now(); p.status = 'archived';
         await save(p); ctx.refreshChrome(); paint();
+        UNDO.record('crumpled ' + s.title, async () => { Object.assign(p, before); await save(p); ctx.refreshChrome(); paint(); });
+        ctx.toast('CRUMPLED — PRESS U TO UNDO', 'is-ghost');
       }, ctx.settings?.reduceMotion ? 0 : 220);
     };
     c.append(toss);
@@ -345,6 +349,7 @@ export async function render(ctx) {
 
   async function binForever(p) {
     lastBinned = { ...p };
+    UNDO.record('binned ' + (p.snapshot?.title || p.id), () => restoreBinned());
     await S.del('personal', p.id);
     recs = recs.filter(r => r.id !== p.id);
     ctx.SFX.del(); ctx.refreshChrome(); paint();

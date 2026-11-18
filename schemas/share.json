@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "share.json",
+  "title": "Share payload",
+  "description": "What a share link carries. camelCase throughout, matching the rest of the project. Nothing in here may contain an application, an email, a phone number, an address, or a note body that was not explicitly chosen.",
+  "type": "object",
+  "required": ["v", "createdAt", "expiresAt", "style", "sections", "redactionReport"],
+  "additionalProperties": false,
+  "properties": {
+    "v": { "type": "integer", "minimum": 1 },
+    "createdAt": { "type": "integer" },
+    "expiresAt": { "type": ["integer", "null"] },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "tagline": { "type": "string" }
+      }
+    },
+    "style": {
+      "type": "object",
+      "required": ["material", "theme", "accent"],
+      "additionalProperties": false,
+      "properties": {
+        "material": { "enum": ["cork", "brick", "panel", "pegboard", "plaster", "chalk"] },
+        "theme": { "enum": ["light-room", "dark-room"] },
+        "accent": { "enum": ["gold", "cyan", "pink"] }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "motivation": { "type": "array", "items": { "type": "string" } },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "done", "total"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "done": { "type": "integer" },
+              "total": { "type": "integer" },
+              "gold": { "type": "boolean" },
+              "checkpoints": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "memories": { "type": "array", "items": { "type": "string" } },
+        "pinned": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "org": { "type": "string" },
+              "domain": { "type": "string" }
+            }
+          }
+        },
+        "random": { "type": "array", "items": { "type": "string" } },
+        "trophies": { "type": "integer", "minimum": 0 },
+        "journey": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "daysActive": { "type": "integer" },
+            "itemsSaved": { "type": "integer" },
+            "goalsHit": { "type": "integer" }
+          }
+        },
+        "note": {
+          "type": "object",
+          "required": ["title"],
+          "additionalProperties": false,
+          "properties": { "title": { "type": "string" }, "body": { "type": "string" } }
+        }
+      }
+    },
+    "redactionReport": {
+      "type": "object",
+      "required": ["included", "redacted"],
+      "additionalProperties": false,
+      "properties": {
+        "included": { "type": "array", "items": { "type": "string" } },
+        "redacted": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

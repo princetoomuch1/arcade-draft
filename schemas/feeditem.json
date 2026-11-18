@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "feeditem.json",
+  "title": "FeedItem",
+  "description": "A public scraped row as it lives in data/*.json. camelCase, matching src/model.js. The A6 spec proposed snake_case; that was rejected in Phase 11 because a schema describes what the data IS, and nine pages plus the scrapers already read these names.",
+  "type": "object",
+  "required": ["id", "type", "title", "url", "source", "firstSeen", "lastSeen"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "type": { "enum": ["hackathon", "job", "internship", "news", "scheme", "event"] },
+    "title": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "pattern": "^https?://" },
+    "org": { "type": ["string", "null"] },
+    "summary": { "type": ["string", "null"] },
+    "source": {
+      "type": "object",
+      "required": ["name", "host"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "host": { "type": "string", "minLength": 1 },
+        "note": { "type": "string" }
+      }
+    },
+    "firstSeen": { "type": "string", "format": "date-time" },
+    "lastSeen": { "type": "string", "format": "date-time" },
+    "lastChanged": { "type": ["string", "null"], "format": "date-time" },
+    "deadline": { "type": ["string", "null"], "format": "date-time" },
+    "startDate": { "type": ["string", "null"], "format": "date-time" },
+    "endDate": { "type": ["string", "null"], "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "skills": { "type": "array", "items": { "type": "string" } },
+    "city": { "type": ["string", "null"] },
+    "state": { "type": ["string", "null"] },
+    "country": { "type": ["string", "null"] },
+    "mode": { "enum": ["online", "in_person", "hybrid", null] },
+    "sourceCount": { "type": "integer", "minimum": 1 },
+    "cluster": { "type": ["string", "null"] },
+    "beginnerFriendly": { "type": "boolean" },
+    "commitmentHours": { "type": "number", "minimum": 0 },
+    "teamSizeMax": { "type": "integer", "minimum": 1 },
+    "eligibility": { "type": "string" },
+    "focus": { "type": "string" },
+    "judging": { "type": "string" },
+    "submission": { "type": "string" },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "at"],
+        "properties": { "label": { "type": "string" }, "at": { "type": "string", "format": "date-time" } }
+      }
+    },
+    "pay": { "type": ["object", "null"] },
+    "workClass": { "type": ["string", "null"] },
+    "_mock": { "type": "boolean" }
+  }
+}

@@ -56,8 +56,10 @@ export function receiptNode(item, opts = {}) {
       ['SOURCE', String(item.source?.name || item.source || 'UNKNOWN').toUpperCase()]
     ];
     const exp = expiresAt(item);
+    const left = Math.ceil((exp - now) / DAY);
     rows.push(['EXPIRES', exp === Infinity ? 'NO DATE GIVEN'
-      : exp < now ? 'ALREADY PASSED' : `IN ${Math.ceil((exp - now) / DAY)} DAYS`]);
+      : exp < now ? 'ALREADY PASSED'
+        : left <= 1 ? 'TOMORROW OR SOONER' : `IN ${left} DAYS`]);
 
     const list = el('div', 'rrows');
     for (const [k, v] of rows) {
