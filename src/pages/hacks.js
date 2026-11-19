@@ -8,6 +8,7 @@ import { pinSvg } from '../sprites.js';
 import { coordsOf, distanceKm, bearing, project, BOXES, HOME } from '../geo.js';
 import { receiptNode } from '../receipt.js';
 import { metrics } from '../u.js';
+import { outLink } from '../link.js';
 
 export const title = 'Hacks';
 export const keys = [['1-4','LEVEL'],['ENTER','OPEN']];
@@ -389,8 +390,8 @@ export async function render(ctx) {
     save.onclick = async () => { await mark(it, STATE.SAVED); await bump(it.skills, 'save'); ctx.coins++; ctx.refreshChrome(); ctx.SFX.save(); save.textContent = 'SAVED'; };
     const plan = el('button', 'btn t-small', 'PLAN IT');
     plan.onclick = async () => { await mark(it, STATE.PLANNED, { planned_for: it.deadline }); await bump(it.skills, 'plan'); ctx.SFX.checkpoint(); ctx.toast('IN THE QUEST LOG', 'is-lime'); };
-    const open = el('a', 'btn t-small is-ghost', 'OPEN LISTING');
-    open.href = it.url; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.style.textDecoration = 'none';
+    const open = outLink('OPEN LISTING', it.url, { cls: 'btn t-small is-ghost', tag: true });
+    open.style.textDecoration = 'none';
     acts.append(save, plan, open);
     box.append(acts);
     if (it._mock) {

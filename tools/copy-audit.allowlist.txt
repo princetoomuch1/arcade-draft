@@ -10,3 +10,8 @@ EXPIRES
 # These two state the rule itself rather than breaking it.
 NOTHING HERE COUNTS TIME SPENT
 No load more here
+# "Welcome back." - the hamster's greeting after an absence. It is a hello, not a nag: nothing
+# was lost while you were away, no streak broke, and the mood floor means she is never sad to
+# see you. The come back rule does not fire on it (no word boundary inside "Welcome"), and
+# it is listed here so the intent is on the record rather than resting on that accident.
+Welcome back.

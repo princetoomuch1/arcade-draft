@@ -6,6 +6,7 @@ import * as S from './store.js';
 import { metrics } from './u.js';
 import { companySprite, raggedEdge } from './sprites.js';
 import * as UNDO from './undo.js';
+import { mountHamster } from './hamster.js';
 
 export const title = 'Desk';
 export const keys = [['SPACE','PICK UP'], ['ARROWS','MOVE']];
@@ -26,7 +27,7 @@ export async function render(ctx) {
 
   let recs = (await S.all('personal')).filter(p => p.snapshot);
   const deskMeta = (await S.get('meta', 'desk')) || { id: 'desk', lamp: true };
-  const uCss = () => metrics(ctx.settings?.density || 'CHUNKY').uCss;
+  const uCss = () => metrics(ctx.settings?.density).uCss;
 
   const live = () => recs.filter(p => KEEP.includes(p.state));
   const drawerRecs = () => recs.filter(p => p.state === S.STATE.DRAWER);
@@ -102,7 +103,7 @@ export async function render(ctx) {
   const cards = new Map();
   let stringMode = false, firstPick = null, autoOn = true;
   /** Sprites are drawn in device pixels, so they need u in device pixels, not CSS. */
-  const uDev = () => metrics(ctx.settings?.density || 'CHUNKY').uDev;
+  const uDev = () => metrics(ctx.settings?.density).uDev;
   /** The last thing binned, kept in memory only, so UNDO is always one click and never a promise. */
   let lastBinned = null, binTimer = null;
 
@@ -373,5 +374,29 @@ export async function render(ctx) {
   }
 
   paint();
+
+  /* Mochi sits on the desk itself, bottom-right, so she scrolls with the wood rather than
+     floating over the page furniture. She is only here — not on the Wall, not on the Computer. */
+  const pet = await mountHamster(ctx);
+  world.append(pet.node);
+  ctx.hamster = pet.api;
+
+  /* She notices what the desk notices: new paper to look at, and things hovered near her. */
+  if (recs.length) pet.api.excite();
+  world.addEventListener('pointerover', e => {
+    if (/** @type {HTMLElement} */ (e.target)?.closest?.('.paper')) pet.api.curious();
+  });
+
+  /* And she is told about the milestones the data already shows, so a level is never
+     a reward for time spent — only for something you actually did. */
+  const earned = S.earnedMilestones({
+    personal: recs,
+    apps: await S.all('apps'),
+    goals: await S.all('goals'),
+    notes: await S.all('notes'),
+    days: await S.activeDays()
+  });
+  for (const id of earned) await pet.api.milestone(id);
+
   return wrap;
 }

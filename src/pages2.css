@@ -104,8 +104,12 @@
 .clip .acts { display:flex; gap:calc(3*var(--u)); margin-top:calc(4*var(--u)); flex-wrap:wrap; }
 .clip .acts .btn { background:#E3D6BC; color:var(--ink-desk); border-color:#5A5248; }
 .clip .acts .btn:hover { background:#D8C9AB; }
-.srctab { position:absolute; right:calc(-1*var(--u)); top:calc(10*var(--u)); background:#5A5248; color:var(--paper);
-          border:0; padding:calc(1*var(--u)) calc(2*var(--u)); cursor:pointer; writing-mode:vertical-rl; }
+/* This was absolutely positioned and set in vertical-rl, which put a rotated word straight over
+   the headline of its own card. A tab that covers the thing it belongs to is not a tab. It sits
+   in the flow now, horizontal, where it can be read and cannot collide. */
+.srctab { display:inline-block; margin:calc(2*var(--u)) calc(2*var(--u)) 0 0;
+          background:#5A5248; color:var(--paper); border:0;
+          padding:calc(1*var(--u)) calc(2*var(--u)); cursor:pointer; }
 .srcstack { margin-top:calc(3*var(--u)); display:grid; gap:calc(2*var(--u)); border-top:var(--u) solid #5A5248;
             padding-top:calc(3*var(--u)); }
 .srcstack a { color:#2B4A6F; }
@@ -114,3 +118,8 @@
 /* inline report form inside a clipping */
 .clip .rep { display:grid; gap:calc(2*var(--u)); margin-top:calc(3*var(--u)); }
 .clip .rep select, .clip .rep input { background:#E3D6BC; color:var(--ink-desk); border:var(--u) solid #5A5248; }
+
+/* A mention of a source that cannot be opened: readable, not underlined, not a link. */
+.is-dead { display:inline-flex; flex-wrap:wrap; align-items:center; gap:calc(1*var(--u));
+           color:#5A5248; text-decoration:none; cursor:default; }
+.is-dead .tag { border:var(--u) solid currentColor; padding:0 calc(1*var(--u)); margin-left:calc(1*var(--u)); }

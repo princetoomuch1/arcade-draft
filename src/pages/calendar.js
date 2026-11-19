@@ -9,6 +9,7 @@
 
 import * as S from '../store.js';
 import * as UNDO from '../undo.js';
+import { outLink } from '../link.js';
 
 export const title = 'CALENDAR';
 export const keys = [['T', 'TODAY']];
@@ -132,11 +133,7 @@ export async function render(ctx) {
     const card = el('article', 'quest-card corner-1 bevel');
 
     const head = el('div', 'qhead');
-    if (q.item.url) {
-      const a = el('a', 'qt t-label', q.item.title);
-      a.href = q.item.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      head.append(a);
-    } else head.append(el('span', 'qt t-label', q.item.title));
+    head.append(outLink(q.item.title, q.item.url, { cls: 'qt t-label' }));
     head.append(el('span', 'qd t-small' + (days <= 3 ? ' soon' : ''),
       days < 0 ? 'CLOSED' : days === 0 ? 'TODAY' : `${days} DAYS`));
     card.append(head);

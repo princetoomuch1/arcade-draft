@@ -222,7 +222,9 @@ describe('dropExpired', () => {
 
 describe('settings', () => {
   it('fills in defaults and remembers what you change', async () => {
-    expect((await S.settings()).density).toBe('CHUNKY');
+    // density defaults to null, meaning "decide it from the window". A hardcoded CHUNKY here was
+    // what made body text 40px and fitted two cards on a 1440x900 screen.
+    expect((await S.settings()).density).toBe(null);
     await S.setSetting('density', 'FINE');
     const s = await S.settings();
     expect(s.density).toBe('FINE');

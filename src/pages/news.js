@@ -4,6 +4,7 @@
 
 import { mark, bump, STATE, get, put, del, clusterItems, brokenClusters, breakCluster, rejoinCluster } from '../store.js';
 import { raggedEdge } from '../sprites.js';
+import { outLink, usableUrl } from '../link.js';
 
 export const title = 'News';
 export const keys = [['SPACE','PAUSE TICKER']];
@@ -53,12 +54,17 @@ export async function render(ctx) {
     ticker.append(btn);
 
     if (reduce) {
+      /* Reduced motion means nothing moves on its own — including a headline that swaps itself
+         every five seconds. It shows one, and you step through them when you want to. */
       let i = 0;
       tape.textContent = '  ' + heads[0];
-      const swap = () => { i = (i + 1) % heads.length; tape.style.opacity = '1'; tape.textContent = '  ' + heads[i]; };
-      let t = setInterval(swap, 5000);
-      btn.onclick = () => { paused = !paused; clearInterval(t); if (!paused) t = setInterval(swap, 5000); btn.textContent = paused ? '▶' : '■'; };
-      stopHooks.push(() => clearInterval(t));
+      btn.textContent = '>';
+      btn.setAttribute('aria-label', 'Show the next headline');
+      btn.onclick = () => {
+        i = (i + 1) % heads.length;
+        tape.textContent = '  ' + heads[i];
+        ctx.SFX.click();
+      };
       return;
     }
 
@@ -127,9 +133,7 @@ export async function render(ctx) {
       const chip = el('span', 'aisum t-small', 'AI SUMMARY');
       chip.title = 'Written by a model from the source text. The original headline and link are always beside it.';
       s.append(chip, document.createTextNode(' ' + lead.summary + ' '));
-      const orig = el('a', 't-small', 'SHOW ORIGINAL');
-      orig.href = lead.url; orig.target = '_blank'; orig.rel = 'noopener noreferrer';
-      s.append(orig);
+      s.append(outLink('SHOW ORIGINAL', lead.url, { cls: 't-small' }));
       c.append(s);
     }
 
@@ -145,9 +149,8 @@ export async function render(ctx) {
       stack.append(el('p', 't-small', 'Every source listed. Nothing merged.'));
       for (const o of [lead, ...others]) {
         const r = el('p', 't-small');
-        const a = el('a', '', o.source?.host || 'source');
-        a.href = o.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        r.append(a, document.createTextNode(` · ${ago(o.firstSeen)} · "${o.title}"`));
+        r.append(outLink(o.source?.host || 'source', o.url),
+          document.createTextNode(` · ${ago(o.firstSeen)} · "${o.title}"`));
         stack.append(r);
       }
       tab.onclick = () => {
@@ -168,9 +171,12 @@ export async function render(ctx) {
     }
 
     const acts = el('div', 'acts');
-    const read = el('a', 'btn t-small', 'READ');
-    read.href = lead.url; read.target = '_blank'; read.rel = 'noopener noreferrer'; read.style.textDecoration = 'none';
-    read.onclick = () => { bump(lead.skills, 'read'); };
+    const read = outLink('READ', lead.url, {
+      cls: usableUrl(lead.url) ? 'btn t-small' : 'btn is-ghost t-small',
+      tag: true,
+      onOpen: () => { bump(lead.skills, 'read'); }
+    });
+    read.style.textDecoration = 'none';
     const save = el('button', 'btn t-small', 'SAVE');
     save.onclick = async () => { await mark(lead, STATE.SAVED); await bump(lead.skills, 'save'); ctx.coins++; ctx.refreshChrome(); ctx.SFX.save(); save.textContent = 'SAVED'; };
     const more = el('button', 'btn t-small', 'MORE');

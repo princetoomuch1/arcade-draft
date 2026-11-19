@@ -8,7 +8,17 @@
 }
 .field:focus { outline:calc(2*var(--u)) solid var(--cyan); outline-offset:0; }
 textarea.field { width:100%; min-height:calc(60*var(--u)); resize:vertical; }
-.empty { color:var(--muted); max-width:calc(200*var(--u)); }
+/* The empty state. It used to be a bare paragraph set at body size with a 200u measure, which on
+   a wide screen rendered as five lines of large text floating in the top-left of an otherwise
+   blank page — it read as a page that had failed to load rather than a list with nothing in it.
+   It is a small bordered panel now, with the sentence and the way out of it. */
+.empty {
+  color:var(--muted); max-width:calc(170*var(--u));
+  border:var(--u) dashed var(--edge); padding:calc(6*var(--u));
+  display:grid; gap:calc(3*var(--u)); justify-items:start;
+  margin-top:calc(4*var(--u));
+}
+.empty .btn { margin-top:calc(1*var(--u)); }
 
 /* ---- notes ---- */
 .inv { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); }

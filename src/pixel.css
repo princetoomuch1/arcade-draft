@@ -23,16 +23,21 @@ img, canvas { image-rendering: pixelated; }
    backdrop-filter, transition on anything but stepped timing, transform: rotate() on live DOM,
    linear-gradient, opacity between 0 and 1 for shading (use dither). */
 
-/* ---- 5.2 type scale. font-size is always N * 8 * u for the 8-grid fonts. ---- */
-.t-display  { font-family:'Press Start 2P',monospace; font-size:calc(16*var(--u)); line-height:calc(24*var(--u)); text-transform:uppercase; }
+/* ---- 5.2 type scale. font-size is always N * 8 * u for the 8-grid fonts. ----
+   Sizes are in u, so they follow the density rather than the screen. The headline sizes came
+   down from 16u after a person said the text was "very big": at the default density 16u is 32px
+   for a card headline, which on a page of cards reads as shouting. 12u (24px) is the cap for a
+   headline now, and nothing on a normal page goes above 32px. INSERT COIN keeps its 48px,
+   because that is the one screen where a single line IS the whole page. */
+.t-display  { font-family:'Press Start 2P',monospace; font-size:calc(12*var(--u)); line-height:calc(18*var(--u)); text-transform:uppercase; }
 .t-boot     { font-family:'Press Start 2P',monospace; font-size:calc(24*var(--u)); line-height:calc(32*var(--u)); text-transform:uppercase; }
 .t-title    { font-family:'Press Start 2P',monospace; font-size:calc(8*var(--u));  line-height:calc(12*var(--u)); text-transform:uppercase; }
 .t-label    { font-family:'Silkscreen',monospace;     font-size:calc(8*var(--u));  line-height:calc(12*var(--u)); text-transform:uppercase; }
 .t-small    { font-family:'Silkscreen',monospace;     font-size:calc(8*var(--u));  line-height:calc(10*var(--u)); text-transform:uppercase; }
-.t-body     { font-family:'VT323',monospace;          font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
-.t-number   { font-family:'VT323',monospace;          font-size:calc(32*var(--u)); line-height:calc(32*var(--u)); font-variant-numeric:tabular-nums; }
-.t-hand     { font-family:'Pixelify Sans',sans-serif; font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
-.t-headnews { font-family:'Pixelify Sans',sans-serif; font-weight:700; font-size:calc(16*var(--u)); line-height:calc(20*var(--u)); }
+.t-body     { font-family:'VT323',monospace;          font-size:calc(12*var(--u)); line-height:calc(16*var(--u)); }
+.t-number   { font-family:'VT323',monospace;          font-size:calc(16*var(--u)); line-height:calc(18*var(--u)); font-variant-numeric:tabular-nums; }
+.t-hand     { font-family:'Pixelify Sans',sans-serif; font-size:calc(12*var(--u)); line-height:calc(16*var(--u)); }
+.t-headnews { font-family:'Pixelify Sans',sans-serif; font-weight:700; font-size:calc(12*var(--u)); line-height:calc(16*var(--u)); }
 /* Below BODY there is no VT323 size: anything smaller than 16u is Silkscreen 8u.
    Nothing is ever set at 12u, 20u or any off-grid size. */
 

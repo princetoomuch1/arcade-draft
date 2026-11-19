@@ -98,6 +98,10 @@ export const SFX = {
   levelUp()    { if (!claim('levelup')) return; voice(450);
                  [NOTE.C5,NOTE.E5,NOTE.G5].forEach((f,i) => tone({ from:f, dur:70, gain:0.12, at:i*70 }));
                  tone({ from:NOTE.C6, dur:240, gain:0.12, at:210, decay:true }); },
+  /* Mochi. Small, soft and short — a pet noise, not a notification. */
+  squeak()     { if (!claim('click')) return; voice(140);
+                 tone({ type:'triangle', from:1200, to:1900, dur:70, gain:0.06 });
+                 tone({ type:'triangle', from:1700, to:2200, dur:60, gain:0.05, at:70 }); },
   chime()      { if (!claim('chime')) return; voice(320); tone({ type:'triangle', from:1318.5, dur:120, gain:0.08 });
                  tone({ type:'triangle', from:1760, dur:200, gain:0.08, at:120 }); },
   powerOn()    { if (!claim('power')) return; voice(220);

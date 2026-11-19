@@ -1,17 +1,30 @@
-/* Stage card + Feed page. UI Spec v2 section 9. Desktop = landscape = two panes.
-   Reference: card 162u wide, 141u tall collapsed. Every number here is from 9.2. */
+/* Stage card + Feed page. UI Spec v2 section 9.
+
+   NOTE on heights. Section 9.2 gives every row an exact height, and that is how this file was
+   first written: `height: calc(46*var(--u))` and so on. It is wrong, and it is what produced the
+   overlapping text a person saw on the Feed — a title that wraps to three lines does not fit a
+   46u box, so it spilled over the row below it and the two drew on top of each other. The spec's
+   numbers are the RESTING size of each row, not a cap on it, so they are `min-height` here and
+   the row grows when the content needs it. The `overflow:hidden` on the card was hiding the
+   symptom at the card edge while the rows still collided inside.
+*/
+
+/* Desktop = landscape = two panes. Reference: card 162u wide, 141u tall collapsed. */
 
 /* ---- 9.1 two panes: left list 162u, 4u gap, right evidence 94u ---- */
+/* Centred, because the two panes are a fixed 256u wide and a wide window left all the empty
+   space in one lump on the right, which reads as a half-loaded page rather than a layout. */
 .feed { display:grid; grid-template-columns:calc(162*var(--u)) calc(94*var(--u));
-        gap:calc(4*var(--u)); align-items:start; }
+        gap:calc(4*var(--u)); align-items:start; justify-content:center; margin-inline:auto;
+        width:fit-content; }
 @media (max-width:1100px) { .feed { grid-template-columns:calc(162*var(--u)); } .evidence { display:none; } }
 
 /* ---- header controls, 53u tall ---- */
 .fhead { width:calc(162*var(--u)); margin-bottom:calc(4*var(--u)); }
-.fhead .row { display:flex; align-items:center; gap:calc(3*var(--u)); }
-.fhead .align { height:calc(22*var(--u)); flex-direction:column; align-items:flex-start; gap:calc(1*var(--u)); display:flex; }
-.fhead .view  { height:calc(12*var(--u)); }
-.fhead .lens  { height:calc(10*var(--u)); margin-top:calc(2*var(--u)); }
+.fhead .row { display:flex; flex-wrap:wrap; align-items:center; gap:calc(3*var(--u)); }
+.fhead .align { min-height:calc(22*var(--u)); flex-direction:column; align-items:flex-start; gap:calc(1*var(--u)); display:flex; }
+.fhead .view  { min-height:calc(12*var(--u)); }
+.fhead .lens  { min-height:calc(10*var(--u)); margin-top:calc(2*var(--u)); }
 
 /* 3-notch slider: track 4u, thumb 8x12, notch ticks 1x3 above the track */
 .notches { position:relative; width:calc(120*var(--u)); height:calc(14*var(--u)); cursor:pointer; }
@@ -52,10 +65,10 @@
                            border-width:0; opacity:1; } }
 
 /* row A */
-.row-a { height:calc(12*var(--u)); display:flex; align-items:center; justify-content:space-between; }
+.row-a { min-height:calc(12*var(--u)); display:flex; align-items:center; justify-content:space-between; }
 
 /* row B: stub | perforation | title */
-.row-b { height:calc(46*var(--u)); margin-top:calc(3*var(--u));
+.row-b { min-height:calc(46*var(--u)); margin-top:calc(3*var(--u));
          display:grid; grid-template-columns:calc(34*var(--u)) calc(4*var(--u)) 1fr; }
 .stub-day { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; }
 .stub-day .n { color:var(--text); line-height:1; }
@@ -73,7 +86,7 @@
 .card-meta { color:var(--muted); margin:calc(2*var(--u)) 0 0; padding-left:calc(4*var(--u)); }
 
 /* row C: why */
-.row-c { height:calc(12*var(--u)); margin-top:calc(3*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
+.row-c { min-height:calc(12*var(--u)); margin-top:calc(3*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
 .why-btn { background:none; border:0; color:var(--cyan); cursor:pointer; padding:0; text-transform:uppercase; }
 .why-btn:hover { color:var(--text); }
 .why-line { color:var(--muted); overflow:hidden; text-overflow:clip; white-space:nowrap; }
@@ -85,7 +98,7 @@
 
 /* row D: fit, three 10u lines */
 .row-d { margin-top:calc(3*var(--u)); }
-.fit { height:calc(10*var(--u)); display:grid; grid-template-columns:calc(7*var(--u)) calc(40*var(--u)) 1fr;
+.fit { min-height:calc(10*var(--u)); display:grid; grid-template-columns:calc(7*var(--u)) calc(40*var(--u)) 1fr;
        align-items:center; gap:calc(2*var(--u)); }
 .fit .g { width:calc(7*var(--u)); height:calc(7*var(--u)); }
 .fit .lab { color:var(--muted); }
@@ -110,7 +123,7 @@
 
 /* row F: actions. Spec says 4 buttons of 38u with 3u gaps = 161u, but the inner width is 154u.
    36u fits exactly (36*4 + 3*3 = 153). Flagged in the doc. */
-.row-f { margin-top:calc(3*var(--u)); display:flex; gap:calc(3*var(--u)); height:calc(14*var(--u)); }
+.row-f { margin-top:calc(3*var(--u)); display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); min-height:calc(14*var(--u)); }
 .row-f .btn { width:calc(36*var(--u)); display:inline-flex; align-items:center; justify-content:center;
               gap:calc(2*var(--u)); padding:0; }
 .row-f .btn svg { width:calc(8*var(--u)); height:calc(8*var(--u)); }
@@ -120,7 +133,7 @@
 .mute-row { display:flex; align-items:center; gap:calc(3*var(--u)); flex-wrap:wrap; }
 
 /* undo row after LESS */
-.undo { width:calc(162*var(--u)); height:calc(14*var(--u)); display:flex; align-items:center; justify-content:space-between;
+.undo { width:calc(162*var(--u)); min-height:calc(14*var(--u)); display:flex; align-items:center; justify-content:space-between;
         padding:0 calc(4*var(--u)); background:var(--surface-hi); border:var(--u) solid var(--edge); color:var(--muted); }
 
 /* +1 AI float on MORE */
@@ -135,7 +148,7 @@
 .stamp { width:calc(48*var(--u)); height:calc(20*var(--u)); }
 
 /* 9.4 divider */
-.divider { width:calc(162*var(--u)); height:calc(10*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
+.divider { width:calc(162*var(--u)); min-height:calc(10*var(--u)); display:flex; align-items:center; gap:calc(3*var(--u)); }
 .divider .l { flex:1 1 auto; height:var(--u); background:var(--edge); }
 .divider .t { color:var(--muted); }
 

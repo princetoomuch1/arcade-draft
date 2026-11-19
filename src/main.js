@@ -145,7 +145,7 @@ function refreshChrome() {
     t.textContent = min >= 60 ? `${Math.floor(min / 60)}H` : `${min}M`;
     t.title = 'Time in this session. Click PAUSE to mute.';
   }
-  const m = metrics(ctx.settings?.density || 'CHUNKY', innerWidth, innerHeight, devicePixelRatio || 1, frameNow());
+  const m = metrics(ctx.settings?.density, innerWidth, innerHeight, devicePixelRatio || 1, frameNow());
   const msg = $('#small-msg');
   if (msg) msg.textContent = `Window is ${innerWidth} × ${innerHeight}. Minimum is 900 × 560.`;
   document.documentElement.dataset.tooSmall = String(m.tooSmall);
@@ -167,7 +167,7 @@ export async function toggleFullscreen(want = !fullscreen) {
     if (fullscreen && !document.fullscreenElement) await document.documentElement.requestFullscreen?.();
     if (!fullscreen && document.fullscreenElement) await document.exitFullscreen?.();
   } catch { /* a refused request only costs us the browser chrome, not the bezel */ }
-  apply(ctx.settings?.density || 'CHUNKY', document.documentElement, frameNow());
+  apply(ctx.settings?.density, document.documentElement, frameNow());
   refreshChrome();
   const b = $('#full'); if (b) b.textContent = fullscreen ? 'WINDOW' : 'FULL';
   SFX.click();

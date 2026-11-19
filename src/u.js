@@ -4,11 +4,20 @@
 
 export const DENSITY = { CHUNKY: 180, BALANCED: 240, FINE: 320 };
 
-/** DESKTOP ONLY. CHUNKY is the default everywhere; BALANCED and FINE stay as a user setting
- *  (VIDEO in Options) because a 27" monitor at CHUNKY gives very few words per line.
+/** DESKTOP ONLY. The default is picked from the window, because a fixed default is what made the
+ *  app unusable: CHUNKY on a 1440x900 window gives u = 5px, which makes body text 40px and fits
+ *  about two cards on a screen. The arcade look does not require giant type — it requires whole
+ *  pixels, which every density gives.
+ *
+ *  D is how many u the SHORT side is divided into, so a bigger D means a smaller u and more room.
+ *  CHUNKY stays available in Options for a small laptop screen, where it is the right answer.
+ *
  *  A narrow or portrait window is a resized desktop window, not a phone: the landscape
  *  layout set still applies, it just gets fewer u across. There is no portrait layout set. */
 export function defaultDensity(w = innerWidth, h = innerHeight) {
+  const short = Math.min(w, h);
+  if (short >= 800) return 'FINE';        // a full desktop screen
+  if (short >= 620) return 'BALANCED';    // a half-height window or a small laptop
   return 'CHUNKY';
 }
 
@@ -26,8 +35,13 @@ export const FRAME_U = 6;
  * The canvas is then however many whole u fit. Leftover device pixels are a letterbox,
  * never a fractional u, because a fractional u is what makes pixel art blurry.
  */
-export function metrics(density = defaultDensity(), w = innerWidth, h = innerHeight, dpr = devicePixelRatio || 1,
+export function metrics(density = null, w = innerWidth, h = innerHeight, dpr = devicePixelRatio || 1,
                         frame = FRAME_U) {
+  /* A null or unset density means "decide from the window". Resolving it here, in the one place
+     allowed to read the viewport, keeps every caller from having to carry its own fallback —
+     which is how `|| 'CHUNKY'` ended up scattered over six files and pinned the whole app to the
+     largest unit regardless of screen. */
+  density = density || defaultDensity(w, h);
   const D = DENSITY[density] ?? DENSITY.BALANCED;
   const wDev = Math.round(w * dpr), hDev = Math.round(h * dpr);
   const shortDev = Math.min(wDev, hDev), longDev = Math.max(wDev, hDev);
@@ -54,7 +68,7 @@ export function metrics(density = defaultDensity(), w = innerWidth, h = innerHei
 }
 
 /** Publish --u and the canvas size in u. Call on load, resize, density change and fullscreen. */
-export function apply(density, root = document.documentElement, frame = FRAME_U) {
+export function apply(density = null, root = document.documentElement, frame = FRAME_U) {
   const m = metrics(density, innerWidth, innerHeight, devicePixelRatio || 1, frame);
   root.style.setProperty('--u', m.uCss + 'px');
   root.style.setProperty('--cw', String(m.canvasU.w));

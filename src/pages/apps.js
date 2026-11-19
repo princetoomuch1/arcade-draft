@@ -12,6 +12,7 @@ import * as S from '../store.js';
 import * as UNDO from '../undo.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
+import { outLink } from '../link.js';
 
 export const title = 'APPLICATIONS';
 export const keys = [['N', 'NEW SLOT']];
@@ -115,11 +116,7 @@ export async function render(ctx) {
     card.append(sp);
 
     const head = el('div', 'slot-head');
-    if (r.url) {
-      const a = el('a', 'role t-label', r.title);
-      a.href = r.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      head.append(a);
-    } else head.append(el('span', 'role t-label', r.title));
+    head.append(outLink(r.title, r.url, { cls: 'role t-label' }));
     head.append(el('span', 'co t-small', String(r.org || 'NO COMPANY NAMED').toUpperCase()));
 
     const trust = el('span', `trust t-small tr-${r.trust}`, r.trust.toUpperCase());
@@ -215,13 +212,22 @@ export async function render(ctx) {
     const shown = rows.filter(r => filter === 'ALL' ? true : filter === 'CLOSED' ? closed(r) : !closed(r));
 
     if (!rows.length) {
-      host.append(el('p', 'empty t-body',
-        'No slots yet. Track a job from the Jobs page, or open one here. Logging it is how you find out '
-        + 'later which of these went nowhere.'));
+      const box = el('div', 'empty t-body');
+      box.append(el('p', '', 'No slots yet.'),
+        el('p', 't-small', 'LOGGING ONE IS HOW YOU FIND OUT LATER WHICH OF THESE WENT NOWHERE.'));
+      const go = el('button', 'btn t-small', 'FIND A JOB TO TRACK');
+      go.onclick = () => ctx.go('jobs');
+      box.append(go);
+      host.append(box);
       return;
     }
     if (!shown.length) {
-      host.append(el('p', 'empty t-body', `Nothing under ${filter}.`));
+      const box = el('div', 'empty t-body');
+      box.append(el('p', '', `Nothing under ${filter}.`));
+      const all = el('button', 'btn t-small', 'SHOW ALL');
+      all.onclick = () => { filter = 'ALL'; drawFilter(); draw(); };
+      box.append(all);
+      host.append(box);
       return;
     }
     // soonest next action first, then whatever moved most recently

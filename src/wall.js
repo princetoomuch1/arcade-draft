@@ -5,6 +5,7 @@ import * as S from './store.js';
 import * as UNDO from './undo.js';
 import { ditherTo16 } from './sprites.js';
 import { WALL_ZONES } from './model.js';
+import { outLink } from './link.js';
 
 export const title = 'Wall';
 export const keys = [];
@@ -158,9 +159,8 @@ export async function render(ctx) {
 
       const mine = types.length ? personal.filter(p => types.includes(p.snapshot.type)) : [];
       for (const p of mine) {
-        const c = el(p.snapshot.url ? 'a' : 'div', 'pin-card');
-        if (p.snapshot.url) { c.href = p.snapshot.url; c.target = '_blank'; c.rel = 'noopener noreferrer'; c.style.textDecoration = 'none'; }
-        c.append(el('span', 'pn t-small', p.snapshot.title),
+        const c = el('div', 'pin-card');
+        c.append(outLink(p.snapshot.title, p.snapshot.url, { cls: 'pn t-small' }),
           el('span', 't-small', p.state === S.STATE.DONE ? 'DONE' : (p.snapshot.org || '')));
         z.append(c);
       }

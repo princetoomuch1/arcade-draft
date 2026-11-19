@@ -2,6 +2,7 @@
    Desktop: two panes (list 162u + evidence 94u), keyboard-first. */
 
 import { assembleDrop, mark, bump, muteTopic, muteList, applyMutes, weightMap, STATE, setSetting } from '../store.js';
+import { outLink, usableUrl } from '../link.js';
 
 export const title = 'Today';
 export const keys = [['J/K','MOVE'],['S','SAVE'],['P','PLAN'],['X','LESS'],['?','WHY'],['ENTER','OPEN']];
@@ -448,7 +449,16 @@ export async function render(ctx) {
     evidence.append(el('h2', 't-label', 'SOURCE'));
     const dl = el('dl');
     const add = (k, v, cls) => { dl.append(el('dt', 't-small', k)); const d = el('dd', 't-small' + (cls ? ' ' + cls : '')); d.innerHTML = v; dl.append(d); };
-    add('PUBLISHER', `<a href="${it.url}" target="_blank" rel="noopener noreferrer">${(it.source?.name || host).toUpperCase()}</a><br>${host}`);
+    /* Built as nodes, not as an innerHTML string: the publisher name goes through the link layer
+       so a row whose source does not resolve shows a name rather than a link into nowhere. */
+    const addNode = (k, node, extra) => {
+      dl.append(el('dt', 't-small', k));
+      const d = el('dd', 't-small');
+      d.append(node);
+      if (extra) { d.append(el('br'), document.createTextNode(extra)); }
+      dl.append(d);
+    };
+    addNode('PUBLISHER', outLink((it.source?.name || host).toUpperCase(), it.url), host);
     add('LISTED', when(it.firstSeen) || 'UNKNOWN');
     add('LAST CHECKED', ago(it.lastSeen));
     add('DEADLINE', it.deadline ? `STATED: ${when(it.deadline)}` : 'MISSING', it.deadline ? '' : 'missing');
@@ -464,8 +474,8 @@ export async function render(ctx) {
     }
 
     const acts = el('div', 'row');
-    const open = el('a', 'btn t-small', 'OPEN ORIGINAL');
-    open.href = it.url; open.target = '_blank'; open.rel = 'noopener noreferrer';
+    const open = outLink('OPEN ORIGINAL', it.url, {
+      cls: usableUrl(it.url) ? 'btn t-small' : 'btn is-ghost t-small', tag: true });
     open.style.textDecoration = 'none';
     const rep = el('button', 'btn t-small is-ghost', 'REPORT OUTDATED');
     rep.onclick = () => {

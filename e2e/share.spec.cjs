@@ -119,6 +119,10 @@ test('the payload carries only what was ticked: no applications, no contacts, no
 });
 
 test('the share view is mobile-responsive: no desktop-only card, no sideways scroll @mobile', async ({ page }) => {
+  /* Build the share at desktop size. Below 900x560 the app shows its RESIZE THE WINDOW card,
+     which covers the one-time tour and blocks setup — and the builder is the author's screen
+     anyway. The assertions below run at 375x667, which is what this test is for. */
+  await page.setViewportSize({ width: 1440, height: 900 });
   await enter(page, 'share');
   await seed(page);
   await page.goto('/#/share');
@@ -131,6 +135,7 @@ test('the share view is mobile-responsive: no desktop-only card, no sideways scr
   const link = await page.locator('#share-link').inputValue();
 
   // open it the way a recipient would: the URL alone, on a phone-sized screen
+  await page.setViewportSize({ width: 375, height: 667 });
   await page.goto(new URL(link).hash ? '/' + new URL(link).hash : '/#/share');
   await page.waitForTimeout(1500);
 

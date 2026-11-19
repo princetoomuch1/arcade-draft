@@ -937,7 +937,10 @@ export function dropExpired(items, personal, now = Date.now()) {
 
 /* ---------- settings ---------- */
 const DEFAULTS = {
-  density: 'CHUNKY', align: 'BALANCED', dropSize: 12, volume: 0.7, muted: false, hoverBlips: false,
+  /* `density: null` means "decide from the window". A hardcoded CHUNKY here was what made the app
+     unreadable on a normal screen: it gave u = 5px, so body text came out at 40px and two cards
+     filled the screen. Options still lets you pin a density; this only sets the first impression. */
+  density: null, align: 'BALANCED', dropSize: 12, volume: 0.7, muted: false, hoverBlips: false,
   crt: false, reduceMotion: false, highContrast: false, textScale: 1, wallMaterial: 'cork', deskAsList: false,
   lang: 'en', notifications: false, personalization: true, quietHours: null, githubToken: '',
   mutedSources: [], mutedPlaces: [],
@@ -1054,4 +1057,111 @@ export async function importBackup(backup, mode = 'merge') {
     for (const r of incoming) { if (r && r.id != null) { await put(s, r); written++; } }
   }
   return { written, cleared, mode };
+}
+
+/* ---------- the hamster ----------
+ *
+ * A pet, and the clearest test of the engagement rules in this project. Everything here is
+ * written so that the hamster can only ever be pleased to see you:
+ *
+ *   - mood goes UP from petting, feeding, playing and real milestones you hit anyway.
+ *   - mood goes DOWN from nothing. Away for a month, it drifts to CONTENT and stops there.
+ *     There is no hunger, no sad face, no "you have not visited in 5 days".
+ *   - level comes from milestones only, never from time spent or days in a row.
+ *   - a long absence is greeted, not punished.
+ *
+ * If a future change makes neglect cost something, it has broken the rule this file exists for.
+ */
+
+export const HAMSTER_NAME = 'Mochi';
+/** Mood never falls below this on its own. CONTENT, slightly sleepy — not sad. */
+export const MOOD_FLOOR = 2;
+export const MOOD_MAX = 5;
+export const LEVEL_MAX = 10;
+
+/** The milestones that raise a level. Every one is something the app already tracks for you. */
+export const MILESTONES = [
+  { id: 'first-save', label: 'saved your first thing' },
+  { id: 'first-application', label: 'logged your first application' },
+  { id: 'first-checkpoint', label: 'ticked your first checkpoint' },
+  { id: 'first-hackathon', label: 'saved your first hackathon' },
+  { id: 'first-note', label: 'wrote your first note' },
+  { id: 'seven-days', label: 'showed up on seven different days' }
+];
+
+/** Earned at each level. Cosmetic, free, and never behind a streak. */
+export const ACCESSORIES = [
+  null, null, 'scarf', 'tiny-hat', 'glasses', 'cup-of-tea',
+  'bow', 'headphones', 'badge', 'crown'
+];
+
+export const blankHamster = () => ({
+  name: HAMSTER_NAME, mood: 3, level: 1,
+  lastFed: null, lastPlayed: null, lastSlept: null, lastSeen: new Date().toISOString(),
+  milestonesHit: [], accessories: [], hidden: false
+});
+
+export async function hamster() {
+  const saved = (await get('meta', 'hamster'))?.v;
+  return { ...blankHamster(), ...(saved || {}) };
+}
+export async function saveHamster(h) {
+  await put('meta', { id: 'hamster', v: h });
+  return h;
+}
+
+/** Level is the count of milestones, capped. Nothing else moves it. */
+export const levelFor = hit => Math.min(LEVEL_MAX, 1 + (hit?.length || 0));
+export const accessoriesFor = level => ACCESSORIES.slice(0, level + 1).filter(Boolean);
+
+/** Raise mood. There is no matching lower(). */
+export function cheer(h, by = 1) {
+  return { ...h, mood: Math.min(MOOD_MAX, Math.max(0, (h.mood ?? 3) + by)) };
+}
+
+/**
+ * What an absence does. The answer is: drifts toward CONTENT and stops.
+ * A hamster at mood 5 that you have not seen in a fortnight is at 2, not at 0, and not sad.
+ */
+export function drift(h, now = Date.now()) {
+  const last = h.lastSeen ? new Date(h.lastSeen).getTime() : now;
+  const days = Math.floor((now - last) / 864e5);
+  if (days < 3) return h;
+  const steps = Math.floor(days / 3);
+  const mood = Math.max(MOOD_FLOOR, Math.min(MOOD_MAX, (h.mood ?? 3) - steps));
+  return { ...h, mood };
+}
+
+/** Record a milestone. Returns the hamster and whether this one was new. */
+export function hitMilestone(h, id) {
+  if (!MILESTONES.some(m => m.id === id)) return { h, gained: false };
+  if ((h.milestonesHit || []).includes(id)) return { h, gained: false };
+  const milestonesHit = [...(h.milestonesHit || []), id];
+  const level = levelFor(milestonesHit);
+  return {
+    h: { ...cheer(h), milestonesHit, level, accessories: accessoriesFor(level) },
+    gained: true
+  };
+}
+
+/** What it says when you arrive. Never a complaint. */
+export function greeting(h, now = Date.now()) {
+  const last = h.lastSeen ? new Date(h.lastSeen).getTime() : now;
+  const days = Math.floor((now - last) / 864e5);
+  if (days >= 3) return 'Welcome back.';
+  return null;
+}
+
+/** Which milestones the current data has already earned. Pure, so it can be tested. */
+export function earnedMilestones({ personal = [], apps = [], goals = [], notes = [], days = [] } = {}) {
+  const out = [];
+  if (personal.some(p => p.state && p.state !== STATE.SEEN)) out.push('first-save');
+  if (apps.length) out.push('first-application');
+  if (goals.some(g => (g.checkpoints || []).some(c => c.done))) out.push('first-checkpoint');
+  if (personal.some(p => p.snapshot?.type === 'hackathon' && p.state && p.state !== STATE.SEEN)) {
+    out.push('first-hackathon');
+  }
+  if (notes.length) out.push('first-note');
+  if (days.length >= 7) out.push('seven-days');
+  return out;
 }

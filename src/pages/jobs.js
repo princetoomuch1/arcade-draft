@@ -5,6 +5,7 @@ import { mark, bump, STATE, put, get, logApplication } from '../store.js';
 import { receiptNode } from '../receipt.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
+import { outLink, usableUrl } from '../link.js';
 
 export const title = 'Jobs';
 export const keys = [['1-4','CLASS'],['C','COMPARE'],['A','MY APPS'],['ENTER','VIEW']];
@@ -440,10 +441,10 @@ export async function render(ctx) {
     acts.style.cssText = 'display:flex;gap:calc(4*var(--u));margin-top:calc(6*var(--u));flex-wrap:wrap';
     const save = el('button', 'btn t-small is-primary', 'SAVE');
     save.onclick = async () => { await mark(item, STATE.SAVED); await bump(item.skills, 'save'); ctx.coins++; ctx.refreshChrome(); ctx.SFX.save(); save.textContent = 'SAVED'; };
-    const apply = el('a', 'btn t-small', 'APPLY');
-    apply.href = item.url; apply.target = '_blank'; apply.rel = 'noopener noreferrer';
+    const apply = outLink('APPLY', item.url, {
+      cls: usableUrl(item.url) ? 'btn t-small' : 'btn is-ghost t-small', tag: true,
+      onOpen: () => { setTimeout(askDidYouApply, 400); } });
     apply.style.textDecoration = 'none';
-    apply.onclick = () => { setTimeout(askDidYouApply, 400); };
     const track = el('button', 'btn t-small', 'TRACK');
     track.title = 'Adds a slot to Applications, labelled MANUAL. Nothing is sent from here.';
     track.onclick = async () => {

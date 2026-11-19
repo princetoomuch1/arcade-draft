@@ -1,0 +1,206 @@
+/* Mochi, on the desk.
+ *
+ * Every animation here is stepped. The pixel law bans eased transitions and rotation on live DOM,
+ * and a pixel hamster that slides smoothly looks like a sticker rather than a drawing. steps() is
+ * also how sprite animation has always worked, so the rule and the look agree for once.
+ */
+
+/* On the desk, lower right, beside the keyboard — and ABOVE the fold.
+   Anchoring her to the bottom of the world put her off the bottom of the screen: the desk is
+   taller than the window and scrolls, so "bottom right of the desk" meant "not there" until you
+   went looking. She is placed where the desk is actually visible when you arrive. */
+.ham {
+  position: absolute;
+  right: calc(18 * var(--u));
+  top: calc(212 * var(--u));
+  width: calc(48 * var(--u));
+  height: calc(48 * var(--u));
+  z-index: 8;
+}
+/* A small window gets a smaller hamster, so she never covers the desk she sits on. */
+@media (max-height: 700px) { .ham { width: calc(36 * var(--u)); height: calc(36 * var(--u)); } }
+
+.ham-art {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* The whole hamster is the button. No visible chrome: the cushion is the affordance. */
+.ham-hit {
+  position: absolute;
+  inset: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.ham-hit:focus-visible { outline: calc(2 * var(--u)) solid var(--gold); outline-offset: var(--u); }
+
+/* ---- the states ---- */
+
+/* breathing: two pixels of rise and fall, four steps, slow. */
+.ham[data-state="idle"] .ham-art { animation: ham-breathe 2.4s steps(2, end) infinite; }
+@keyframes ham-breathe {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, calc(-1 * var(--u)), 0); }
+}
+
+/* eating: a small rocking chew. */
+.ham[data-state="eating"] .ham-art { animation: ham-chew 0.32s steps(2, end) infinite; }
+@keyframes ham-chew {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, var(--u), 0); }
+}
+
+/* sleeping: the body settles, and the Z's drift up. */
+.ham[data-state="sleeping"] .ham-art { animation: ham-snore 3.2s steps(2, end) infinite; }
+@keyframes ham-snore {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, var(--u), 0); }
+}
+.ham[data-state="sleeping"]::before,
+.ham[data-state="sleeping"]::after {
+  content: "z";
+  position: absolute;
+  right: calc(6 * var(--u));
+  top: calc(6 * var(--u));
+  font-family: 'VT323', monospace;
+  font-size: calc(10 * var(--u));
+  color: #6B5A46;
+  animation: ham-z 2.4s steps(4, end) infinite;
+}
+.ham[data-state="sleeping"]::after { animation-delay: 1.2s; right: calc(2 * var(--u)); }
+@keyframes ham-z {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0); }
+  40%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(0, calc(-10 * var(--u)), 0); }
+}
+
+/* running: she bobs on the spot while the two frames swap underneath. */
+.ham[data-state="running"] .ham-art { animation: ham-run 0.24s steps(2, end) infinite; }
+@keyframes ham-run {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(var(--u), calc(-1 * var(--u)), 0); }
+}
+/* dust, kicked up behind her */
+.ham[data-state="running"]::before {
+  content: "";
+  position: absolute;
+  left: calc(2 * var(--u));
+  bottom: calc(6 * var(--u));
+  width: calc(3 * var(--u));
+  height: calc(2 * var(--u));
+  background: #C9B08A;
+  animation: ham-dust 0.48s steps(3, end) infinite;
+}
+@keyframes ham-dust {
+  0%   { opacity: 0.9; transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; transform: translate3d(calc(-6 * var(--u)), calc(-3 * var(--u)), 0); }
+}
+
+/* happy: a bounce with a hold at the top. */
+.ham[data-state="happy"] .ham-art { animation: ham-bounce 0.4s steps(3, end) 4; }
+@keyframes ham-bounce {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  40%      { transform: translate3d(0, calc(-5 * var(--u)), 0); }
+}
+
+/* excited: faster, smaller hops, with an exclamation mark over her head. */
+.ham[data-state="excited"] .ham-art { animation: ham-hop 0.22s steps(2, end) 9; }
+@keyframes ham-hop {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, calc(-3 * var(--u)), 0); }
+}
+.ham[data-state="excited"]::before {
+  content: "!";
+  position: absolute;
+  left: 50%;
+  top: calc(-2 * var(--u));
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(8 * var(--u));
+  color: var(--gold);
+  animation: ham-pop 0.3s steps(2, end) infinite;
+}
+@keyframes ham-pop {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, calc(-2 * var(--u)), 0); }
+}
+
+/* curious: a question mark, and the head-tilt frame does the rest. */
+.ham[data-state="curious"]::before {
+  content: "?";
+  position: absolute;
+  left: 50%;
+  top: calc(-2 * var(--u));
+  font-family: 'Press Start 2P', monospace;
+  font-size: calc(8 * var(--u));
+  color: #6B5A46;
+}
+
+/* ---- hearts, speech, menu ---- */
+
+.ham-sparks { position: absolute; inset: 0; pointer-events: none; }
+.ham-heart {
+  position: absolute;
+  bottom: calc(20 * var(--u));
+  width: calc(3 * var(--u));
+  height: calc(3 * var(--u));
+  background: #D1495B;
+  animation: ham-rise 0.9s steps(5, end) forwards;
+}
+@keyframes ham-rise {
+  0%   { opacity: 1; transform: translate3d(0, 0, 0); }
+  100% { opacity: 0; transform: translate3d(0, calc(-18 * var(--u)), 0); }
+}
+
+.ham-say {
+  position: absolute;
+  bottom: calc(46 * var(--u));
+  right: 0;
+  min-width: calc(44 * var(--u));
+  max-width: calc(90 * var(--u));
+  background: #F2E6CC;
+  color: var(--ink-desk, #2B1B10);
+  border: var(--u) solid #5A5248;
+  padding: calc(2 * var(--u)) calc(3 * var(--u));
+  z-index: 9;
+}
+
+.ham-menu {
+  position: absolute;
+  bottom: calc(46 * var(--u));
+  right: 0;
+  display: grid;
+  gap: var(--u);
+  background: #F2E6CC;
+  border: var(--u) solid #5A5248;
+  padding: calc(2 * var(--u));
+  z-index: 10;
+}
+.ham-mi {
+  background: #E3D6BC;
+  color: #2B1B10;
+  border: var(--u) solid #5A5248;
+  padding: calc(1 * var(--u)) calc(3 * var(--u));
+  cursor: pointer;
+  text-align: left;
+}
+.ham-mi:hover { background: #D8C9AB; }
+.ham-menu input {
+  background: #FFF6E0;
+  color: #2B1B10;
+  border: var(--u) solid #5A5248;
+  padding: calc(1 * var(--u)) calc(2 * var(--u));
+  width: calc(50 * var(--u));
+}
+
+/* Somebody who asked for less movement gets a still hamster, not a missing one. */
+@media (prefers-reduced-motion: reduce) {
+  .ham-art, .ham[data-state]::before, .ham[data-state]::after, .ham-heart { animation: none !important; }
+}
+:root[data-reduce-motion="true"] .ham-art,
+:root[data-reduce-motion="true"] .ham[data-state]::before,
+:root[data-reduce-motion="true"] .ham[data-state]::after,
+:root[data-reduce-motion="true"] .ham-heart { animation: none !important; }
