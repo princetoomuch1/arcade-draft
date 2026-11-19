@@ -13,6 +13,7 @@ import {
 } from '../share/payload.js';
 import { shareNode, invalidNode, toMarkdown } from '../share/view.js';
 import { qrCanvas } from '../share/qr.js';
+import { sharePNG, download } from '../share/png.js';
 
 export const title = 'SHARE';
 export const keys = [['ESC', 'BACK']];
@@ -251,11 +252,29 @@ export async function render(ctx, params = {}) {
   };
   const pdf = el('button', 'btn t-small', 'PRINT OR SAVE AS PDF');
   pdf.onclick = () => window.print();
+  /* The picture. Drawn by the browser out of the share's own DOM - no library, because a runtime
+     dependency would cost the offline guarantee. It can fail honestly, so it says so when it does. */
+  const png = el('button', 'btn t-small', 'SAVE AS A PICTURE');
+  png.onclick = async () => {
+    const card = preview.querySelector('.sv');
+    if (!card) { ctx.toast('NOTHING TO DRAW YET', 'is-orange'); return; }
+    const was = png.textContent;
+    png.textContent = 'DRAWING…'; png.disabled = true;
+    try {
+      const r = await sharePNG(/** @type {HTMLElement} */ (card));
+      if (!r.ok) { pngWhy.textContent = r.why.toUpperCase(); ctx.toast('NO PICTURE', 'is-orange'); return; }
+      pngWhy.textContent = `SAVED ${r.width} x ${r.height}, AT TWICE THAT IN PIXELS.`;
+      download(r.blob, 'my-wall.png');
+      ctx.SFX.save();
+    } finally { png.textContent = was; png.disabled = false; }
+  };
+  const pngWhy = el('p', 'sb-note t-small', '');
   const row6 = el('div', 'sb-row');
-  row6.append(md, pdf);
-  s6.append(row6);
+  row6.append(md, pdf, png);
+  s6.append(row6, pngWhy);
   s6.append(Object.assign(el('p', 'sb-note t-small',
-    'IMAGE EXPORT IS NOT BUILT YET. PRINT GIVES A CLEAN PDF, AND THE LINK IS USUALLY WHAT YOU WANT.'), {}));
+    'THE PICTURE IS DRAWN HERE, NOT UPLOADED ANYWHERE. PRINT GIVES A CLEAN PDF, AND THE LINK IS '
+    + 'USUALLY WHAT YOU WANT.'), {}));
 
   const current = () => buildPayload(source, { choices, redaction, style, header, expiryDays });
 

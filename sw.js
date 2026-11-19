@@ -34,7 +34,8 @@ const SHELL_FILES = [
   './src/pages/news.js', './src/pages/more.js', './src/pages/notes.js',
   './src/pages/calendar.js', './src/pages/apps.js', './src/pages/options.js',
   './src/pages/credits.js', './src/pages/share.js', './src/pages/shares.js', './src/pages/viewer.js',
-  './src/share/payload.js', './src/share/view.js', './src/share/qr.js', './src/undo.js'
+  './src/share/payload.js', './src/share/view.js', './src/share/qr.js', './src/share/png.js',
+  './src/undo.js'
 ];
 
 self.addEventListener('install', e => {

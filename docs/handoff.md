@@ -86,7 +86,10 @@ you send anything.
 - **Markdown** — a text summary, for pasting into a message or a CV.
 - **QR** — drawn in the browser, no service involved. If the link is too long for a QR the builder
   says so and suggests a hosted share instead of drawing an unscannable square.
-- **PNG** — not built. See *Known limitations*.
+- **PNG** — SAVE AS A PICTURE in step 6. Drawn in your browser out of the share's own markup and
+  never uploaded anywhere. The fonts are fetched from Google once and inlined into the picture, so
+  the first export needs to be online; after that they are cached. If anything in that chain fails
+  it tells you why and points at the PDF, rather than handing you a picture in the wrong typeface.
 
 ### The share view is the one responsive screen
 
@@ -205,9 +208,10 @@ Written down rather than quietly left out.
 3. **QR codes are unproven against a real camera.** The encoder is verified structurally — size,
    finder patterns, timing, the dark module, version selection, determinism, and an honest refusal
    past version 20 — but nobody has pointed a phone at one.
-4. **PNG export of the wall is deferred.** html2canvas would do it in an afternoon and was ruled
-   out: a runtime dependency costs the offline and five-year guarantees. The SVG `foreignObject`
-   route needs the fonts base64-inlined and is logged in BUILD_LOG.md as deferred.
+4. **PNG export needs the fonts once.** The picture is sealed — the browser fetches nothing for
+   it — so the fonts are inlined as base64, which means the first export must be online. It also
+   relies on the browser rasterizing embedded HTML, which older Safari does badly. Both failures
+   are reported in words, and the PDF export works everywhere.
 5. **Desktop only** except the share view. Narrow windows get RESIZE THE WINDOW.
 6. **Fonts come from Google Fonts** — free and keyless, the only cross-origin request the app
    makes, and now cached by the service worker after the first successful load. Before that first

@@ -1122,3 +1122,61 @@ Not met, honestly:
  data        pass        4 files, 25 rows
  e2e         pass        36 tests - desktop 35, mobile 1
 ```
+
+---
+
+## Phase 14 — PNG export, built rather than dropped
+
+The stretch goal was time-boxed to a day and allowed to be dropped. It is **done**, and without
+html2canvas.
+
+The chain is: the share's own DOM → an SVG `foreignObject` → an `<img>` → a `<canvas>` → a PNG
+blob. Two facts decide whether that works, and both are handled rather than hoped for:
+
+- **The SVG is a sealed box.** Once it is handed to an `<img>`, the browser fetches nothing more
+  for it. So `share.css` is inlined as text and the four fonts are inlined as base64 `@font-face`
+  rules. A missing font does not fail loudly — it silently falls back to monospace, and the export
+  comes out looking like a different app.
+- **A tainted canvas cannot be read.** `toBlob` throws a `SecurityError` if anything cross-origin
+  reached the canvas. Base64 fonts and a `data:` URL for the SVG keep the whole thing same-origin
+  by construction, which is the reason neither is loaded by URL.
+
+Google Fonts serves `woff2` with CORS, which was the one unknown; it was checked first, before any
+of this was written.
+
+### Two bugs, both found by looking at the picture
+
+1. **A transparent band along the bottom.** The first export was 45% transparent. A PNG with a
+   see-through strip looks broken everywhere it gets posted, so the paper now goes in as an SVG
+   `<rect>` behind everything — the picture is opaque whatever the layout does.
+2. **And then the band was still there, as empty paper.** The real cause was not the layout: the
+   height was measured from the **live** node, while the thing being drawn is a clone with the
+   builder's privacy panel removed. The original measured 1314px; the picture needed 849px. It now
+   measures the clone. This is the kind of bug that no amount of green tests finds, because every
+   test was asserting on a picture that was technically correct.
+
+### Reported, never guessed
+
+Every failure in the chain returns `{ok: false, why}` in words: fonts unreadable → "try again when
+you are online, or use the PDF export"; the browser refuses to rasterize → "the PDF export works
+everywhere, and a screenshot always works"; a tainted canvas → says plainly that it is a bug in
+this code and not something the user did.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        315 tests, 18 files
+ audit       pass        29 modules, 12 stylesheets
+ data        pass        4 files, 25 rows
+ e2e         pass        38 tests - desktop 37, mobile 1
+```
+
+The rasterizing half is tested in a real browser, which decodes the PNG back and counts pixels: a
+blank rectangle has one colour, and a transparent sheet is not fully opaque. The font-fetching half
+is unit-tested against a stub, and `primeFonts()` exists so the browser test never depends on
+Google being up — a test that goes red because an external service is down teaches nobody anything.
+
+**Still deferred:** nothing from Phase 14. PNG is in.

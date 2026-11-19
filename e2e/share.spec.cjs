@@ -225,3 +225,70 @@ test('the shares list is honest about what a link cannot be taken back', async (
   await expect(page.locator('#page')).toContainText('NOTHING REPORTS BACK');
   await expect(page.getByRole('button', { name: 'FORGET THIS ROW' })).toBeVisible();
 });
+
+test('the picture export really draws the share, and is not a blank rectangle', async ({ page }) => {
+  await enter(page, 'share');
+  await seed(page);
+  await page.goto('/#/share');
+  await page.waitForTimeout(800);
+  await page.locator('#ch-motivation').check();
+  await page.locator('#ch-journey').check();
+  await page.locator('#ch-trophies').check();
+  await page.waitForTimeout(500);
+
+  /* Prime the fonts rather than fetching them from Google: the rasterizing half of the chain is
+     what this test is for, and a test that needs an external service to be up goes red for
+     reasons that have nothing to do with this code. */
+  const result = await page.evaluate(async () => {
+    const P = await import('/src/share/png.js');
+    P.primeFonts('/* primed: no network in this test */');
+    const card = document.querySelector('.sv');
+    const r = await P.sharePNG(card);
+    if (!r.ok) return { ok: false, why: r.why };
+
+    // draw the PNG back and look at it, because a blank image is also a PNG
+    const bmp = await createImageBitmap(r.blob);
+    const c = document.createElement('canvas');
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext('2d').drawImage(bmp, 0, 0);
+    const px = c.getContext('2d').getImageData(0, 0, bmp.width, bmp.height).data;
+    const seen = new Set();
+    let opaque = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      if (px[i + 3] > 250) opaque++;
+      seen.add(`${px[i]},${px[i + 1]},${px[i + 2]}`);
+    }
+    return {
+      ok: true, bytes: r.blob.size, type: r.blob.type,
+      w: bmp.width, h: bmp.height, colours: seen.size,
+      opaqueShare: opaque / (px.length / 4)
+    };
+  });
+
+  expect(result.ok, result.why).toBe(true);
+  expect(result.type).toBe('image/png');
+  expect(result.bytes).toBeGreaterThan(2000);
+  // drawn at 2x the measured size
+  expect(result.w).toBeGreaterThan(200);
+  expect(result.h).toBeGreaterThan(200);
+  // a blank rectangle has one colour; a drawn share has the paper, the ink and the accent at least
+  expect(result.colours).toBeGreaterThan(3);
+  /* Fully opaque. The laid-out share is not always exactly as tall as it measured — these fonts
+     are primed rather than fetched, so text wraps differently here than on the page — and the
+     point of the background rect is that the picture is solid regardless. */
+  expect(result.opaqueShare).toBe(1);
+});
+
+test('the picture export says why when the fonts cannot be read, instead of drawing the wrong thing', async ({ page }) => {
+  await enter(page, 'share');
+  await page.goto('/#/share');
+  await page.waitForTimeout(800);
+  const why = await page.evaluate(async () => {
+    const P = await import('/src/share/png.js');
+    P.forgetFonts();
+    const r = await P.inlineFonts(async () => { throw new Error('no network here'); });
+    return r.ok ? null : r.why;
+  });
+  expect(why).toContain('no network here');
+  expect(why).toContain('PDF export');
+});

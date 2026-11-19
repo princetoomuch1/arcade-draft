@@ -171,8 +171,11 @@ repository. Build tools are MIT / Apache-2.0 / MPL-2.0. Nothing is paid for.
   shows RESIZE THE WINDOW on a narrow screen.
 - QR codes are verified structurally (size, finder patterns, timing, version selection,
   determinism) but have **not** been scanned with a real phone camera.
-- PNG export of the wall is deferred: see BUILD_LOG.md. html2canvas was ruled out — a runtime
-  dependency would cost the offline and longevity guarantee.
+- PNG export is built without a library: the share's own DOM goes into an SVG `foreignObject`
+  with the CSS and the fonts inlined, then onto a canvas. html2canvas was ruled out — a runtime
+  dependency would cost the offline and longevity guarantee. It needs the fonts once from Google
+  (they are then cached); offline before that first fetch it refuses and says to use the PDF.
+  Rasterizing embedded HTML is unreliable in older Safari, where the PDF export is the way.
 - No scrape sources configured, so `data/*.json` is fictional seed data (`_mock: true` on every row).
 - `sw.js` is not covered by `tsc` because its global scope conflicts with the DOM lib; ESLint checks it.
 - `verify.sh` from the build spec is `tools/verify.mjs` here: same steps and exit codes, but Node so
