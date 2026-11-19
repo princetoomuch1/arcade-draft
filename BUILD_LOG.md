@@ -1180,3 +1180,27 @@ is unit-tested against a stub, and `primeFonts()` exists so the browser test nev
 Google being up — a test that goes red because an external service is down teaches nobody anything.
 
 **Still deferred:** nothing from Phase 14. PNG is in.
+
+### A4 addendum - the routes I had not actually opened
+
+The first pass through Prompt 4 fixed what was reported and what the new assertions caught, but I
+had only looked at six of the thirteen routes with my own eyes. Opening the rest found two more
+of exactly the same bug, which the overlap detector could not see because the content was being
+clipped rather than stacked:
+
+- **Jobs**: `.fighter` and all five of its rows had fixed heights, so every card was cut off
+  mid-sentence - "JUNIOR FULL-" with the rest of the title gone, the MAT/GAP/UNK bars sliced in
+  half, and the VIEW button missing entirely. All `min-height` now, with the grid set to
+  `align-items: start` so cards end where their content ends. `.filterrow` also wrapped to two
+  lines inside a 12u box and drew over the cards below it.
+- **Hacks**: the CITY/STATE/COUNTRY/WORLD chips carry a count, and "COUNTRY 8" wrapped inside a
+  fixed-height button, dropping the number out of the bottom of its own box. Those chips do not
+  wrap now.
+- **Calendar**: the quiet-hours fields were 28u wide and clipped their own placeholders to "fr"
+  and "to". 44u.
+
+Clean on inspection, no changes needed: Menu, Notes, Options, Desk, Wall, Credits, More, Feed,
+News, Applications.
+
+`sw.js` VERSION -> v4: the shell list gained `hamster.js`, `hamster.css` and `link.js`, and a new
+shell list under an old cache name means returning visitors keep the old app.

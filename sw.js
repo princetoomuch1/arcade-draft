@@ -16,7 +16,7 @@
  * never fetched, so they are never cached and never leave the device.
  */
 
-const VERSION = 'v3';   // v2: the Phase 12 share files. v3: the font cache below.
+const VERSION = 'v4';   // v2: the share files. v3: the font cache. v4: the hamster and link.js.
 const SHELL = `arcade-shell-${VERSION}`;
 const DATA = `arcade-data-${VERSION}`;
 /* Fonts are deliberately NOT versioned: a font file never changes under its own URL, so there is

@@ -41,7 +41,8 @@
 .rem { display:grid; gap:calc(3*var(--u)); justify-items:start; max-width:calc(220*var(--u)); margin-bottom:calc(6*var(--u)); }
 .rem h2 { margin:0; color:var(--text); }
 .quiet-row { display:flex; flex-wrap:wrap; gap:calc(3*var(--u)); align-items:center; }
-.quiet-row .field { width:calc(28*var(--u)); min-width:0; }
+/* 28u clipped the placeholder to "fr" / "to" at the default density. */
+.quiet-row .field { width:calc(44*var(--u)); min-width:0; }
 .quiet-row > .t-small { color:var(--muted); }
 .remstate { color:var(--gold); }
 .remrow { display:flex; gap:calc(4*var(--u)); align-items:center; }

@@ -2,7 +2,7 @@
 
 /* ---------- 10.1 class tabs. Widths from the spec; they assume Silkscreen averages 6u
      per character, which build step 0 measures. ---------- */
-.classtabs { display:flex; gap:calc(4*var(--u)); height:calc(14*var(--u)); margin-bottom:calc(4*var(--u)); }
+.classtabs { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); min-height:calc(14*var(--u)); margin-bottom:calc(4*var(--u)); }
 .classtab { height:calc(14*var(--u)); border:var(--u) solid var(--edge); background:var(--surface);
             color:var(--text); cursor:pointer; padding:0 calc(3*var(--u)); }
 .classtab:hover { background:var(--surface-hi); }
@@ -14,7 +14,10 @@
 .classbanner { height:calc(4*var(--u)); margin-bottom:calc(4*var(--u)); }
 
 /* ---------- 10.2 filters ---------- */
-.filterrow { display:flex; gap:calc(3*var(--u)); height:calc(12*var(--u)); align-items:center; flex-wrap:wrap; }
+/* A wrapping row cannot also be 12u tall: the second line of filters drew over the cards below.
+   The height is a floor now, like every other row that holds text. */
+.filterrow { display:flex; gap:calc(3*var(--u)); min-height:calc(12*var(--u)); align-items:center;
+             flex-wrap:wrap; margin-bottom:calc(4*var(--u)); }
 .filterpanel { margin:calc(3*var(--u)) 0; padding:calc(4*var(--u)); background:var(--surface);
                border:var(--u) solid var(--bevel-lo); display:grid; gap:calc(3*var(--u)); }
 .frow { display:grid; grid-template-columns:calc(40*var(--u)) 1fr calc(56*var(--u)); gap:calc(3*var(--u)); align-items:center; }
@@ -34,17 +37,18 @@
        padding:calc(2*var(--u)); min-height:max(calc(10*var(--u)),24px); }
 
 /* ---------- 10.3 fighter card: 78x104u, landscape 84 wide, 3 per row ---------- */
-.fighters { display:grid; grid-template-columns:repeat(auto-fill, calc(84*var(--u))); gap:calc(6*var(--u)); }
-.fighter { width:calc(84*var(--u)); height:calc(104*var(--u)); background:var(--surface);
+.fighters { display:grid; grid-template-columns:repeat(auto-fill, calc(84*var(--u)));
+            gap:calc(6*var(--u)); align-items:start; padding-bottom:calc(4*var(--u)); }
+.fighter { width:calc(84*var(--u)); min-height:calc(104*var(--u)); background:var(--surface);
            border:var(--u) solid var(--bevel-lo); position:relative; cursor:pointer; }
 .fighter:hover, .fighter:focus-visible { background:var(--surface-hi); box-shadow:calc(3*var(--u)) calc(3*var(--u)) 0 0 #000; }
 .fighter .banner { height:calc(22*var(--u)); display:grid; place-items:center; position:relative; }
 .fighter .banner canvas { width:calc(16*var(--u)); height:calc(16*var(--u)); outline:var(--u) solid var(--ink); }
 .fighter .keytile { position:absolute; left:calc(2*var(--u)); top:calc(2*var(--u)); width:calc(8*var(--u));
                     height:calc(8*var(--u)); display:grid; place-items:center; background:var(--ink); color:var(--cyan); }
-.fighter .role { height:calc(24*var(--u)); padding:0 calc(3*var(--u)); margin-top:calc(4*var(--u)); color:var(--text); overflow:hidden; }
-.fighter .co   { height:calc(10*var(--u)); padding:0 calc(3*var(--u)); color:var(--muted); }
-.fighter .bars { height:calc(24*var(--u)); padding:0 calc(3*var(--u)); display:grid; gap:calc(1*var(--u)); }
+.fighter .role { min-height:calc(24*var(--u)); padding:0 calc(3*var(--u)); margin-top:calc(4*var(--u)); color:var(--text); }
+.fighter .co   { min-height:calc(10*var(--u)); padding:0 calc(3*var(--u)); color:var(--muted); }
+.fighter .bars { min-height:calc(24*var(--u)); padding:0 calc(3*var(--u)); display:grid; gap:calc(1*var(--u)); }
 .fbar { height:calc(7*var(--u)); display:grid; grid-template-columns:calc(16*var(--u)) 1fr; align-items:center; gap:calc(2*var(--u)); }
 .fbar .lab { color:var(--muted); }
 .fbar .segs { display:flex; gap:var(--u); }
@@ -52,7 +56,7 @@
 .fbar.mat .segs i.on { background:var(--lime); }
 .fbar.gap .segs i.on { background:var(--danger); }
 .fbar.unk .segs i.on { background:var(--muted); }
-.fighter .foot { height:calc(14*var(--u)); padding:0 calc(3*var(--u)); display:flex; align-items:center;
+.fighter .foot { min-height:calc(14*var(--u)); padding:0 calc(3*var(--u)); display:flex; align-items:center;
                  justify-content:space-between; }
 .fdot { width:calc(7*var(--u)); height:calc(7*var(--u)); background:var(--lime); }
 .fdot.stale { background:var(--orange); } .fdot.old { background:var(--muted); }
@@ -72,7 +76,7 @@
 .tag.disclosed { color:var(--lime); } .tag.estimated { color:var(--gold); } .tag.missing { color:var(--muted); }
 
 /* ---------- 11.1 Hacks ---------- */
-.levelswitch { display:flex; gap:calc(4*var(--u)); height:calc(14*var(--u)); margin-bottom:calc(4*var(--u)); }
+.levelswitch { display:flex; flex-wrap:wrap; gap:calc(4*var(--u)); min-height:calc(14*var(--u)); margin-bottom:calc(4*var(--u)); }
 .mapwrap { position:relative; background:var(--bg); border:var(--u) solid var(--bevel-lo); }
 .mapwrap canvas { display:block; }
 .onlinelane { height:calc(14*var(--u)); margin-top:calc(3*var(--u)); display:flex; align-items:center;
@@ -123,3 +127,7 @@
 .is-dead { display:inline-flex; flex-wrap:wrap; align-items:center; gap:calc(1*var(--u));
            color:#5A5248; text-decoration:none; cursor:default; }
 .is-dead .tag { border:var(--u) solid currentColor; padding:0 calc(1*var(--u)); margin-left:calc(1*var(--u)); }
+
+/* Chips that carry a count ("COUNTRY 8") were wrapping inside a fixed-height button, which
+   dropped the number out of the bottom of its own box. They do not wrap. */
+.levelswitch button, .classtab, .filterrow button { white-space: nowrap; }
