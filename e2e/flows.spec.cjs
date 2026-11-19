@@ -8,31 +8,7 @@ const { test, expect } = require('@playwright/test');
 
 const ROUTES = ['menu', 'feed', 'jobs', 'hacks', 'news', 'more', 'notes', 'cal', 'apps', 'opts', 'desk', 'wall', 'credits'];
 
-async function fresh(page) {
-  await page.goto('/');
-  await page.evaluate(async () => {
-    for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
-    for (const k of await caches.keys()) await caches.delete(k);
-    await new Promise(res => {
-      const q = indexedDB.deleteDatabase('arcade');
-      q.onsuccess = q.onerror = q.onblocked = res;
-    });
-  });
-}
-
-/** Start the app past the coin screen and the one-time tour, then land on a route. */
-async function enter(page, route = 'desk') {
-  await page.goto('/#/' + route);
-  await page.waitForSelector('#page');
-  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })));
-  await page.waitForTimeout(300);
-  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })));
-  await page.waitForTimeout(900);
-  const tour = page.locator('.tour button');
-  if (await tour.count()) await tour.first().click();
-  await page.goto('/#/' + route);
-  await page.waitForTimeout(700);
-}
+const { fresh, enter } = require('./app.cjs');
 
 test.beforeEach(async ({ page }) => { await fresh(page); });
 
@@ -75,6 +51,25 @@ test('saving an item puts it on the desk', async ({ page }) => {
 
 test('the alignment slider reorders the drop', async ({ page }) => {
   await enter(page, 'feed');
+  /* Alignment re-weights interest, so with no interests at all every item scores the same and the
+     order cannot move — the test would then be passing or failing on the luck of the wildcard
+     picks. Give it something to lean on, then reload so the feed reads the weights. */
+  await page.evaluate(async () => {
+    const S = await import('/src/store.js');
+    const M = await import('/src/model.js');
+    const strong = { react: 0.95, node: 0.9, sql: 0.85 };
+    const faint = { embedded: 0.2, sensors: 0.15, excel: 0.25 };
+    for (const [k, w] of Object.entries(strong)) {
+      await S.put('weights', M.blankInterest(k, { weight: w, kind: 'explicit', source: 'you' }));
+    }
+    for (const [k, w] of Object.entries(faint)) {
+      await S.put('weights', M.blankInterest(k, { weight: w }));
+    }
+  });
+  // a hash-only goto does not reload, and the app reads the weights once at start
+  await page.reload();
+  await enter(page, 'feed');
+
   const ids = () => page.$$eval('.card', els => els.map(e => e.dataset.id));
   const before = await ids();
   await page.locator('.notches').focus();

@@ -1,13 +1,17 @@
 /* MORE — the four pages that do not get a top-level tab. Built in stage 1. */
 export const title = 'More';
-export const keys = [['1','NOTES'],['2','CAL'],['3','APPS'],['4','OPTS'],['5','CREDITS']];
+export const keys = [['1','NOTES'],['2','CAL'],['3','APPS'],['4','OPTS'],['5','CREDITS'],['6','SHARE']];
 
 const ITEMS = [
   ['notes', 'NOTES', 'Project notes, images, links between them'],
   ['cal',   'CALENDAR', 'Quest Log, week load, month grid, year wheel'],
   ['apps',  'APPLICATIONS', 'What you applied to, and what happened'],
   ['opts',  'OPTIONS', 'Pixel size, sound, motion, interests, data'],
-  ['credits', 'CREDITS', 'Every borrowed thing, with its licence']
+  ['credits', 'CREDITS', 'Every borrowed thing, with its licence'],
+  ['share',  'SHARE',   'Send someone a curated, private-safe snapshot'],
+  ['shares', 'MY SHARES', 'Links you made, and how to stop them'],
+  ['viewer', 'VIEWER',  'Your room as a stranger sees it, read only'],
+  ['present','PRESENT', 'Fullscreen, for a call']
 ];
 
 export function render(ctx) {

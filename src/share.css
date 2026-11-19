@@ -1,0 +1,156 @@
+/* The share view, the viewer and present mode.
+ *
+ * The share view is the one place that breaks the pixel law on purpose. It is opened by other
+ * people, usually on a phone, from a message — so it is laid out in CSS pixels and rem, it
+ * reflows, and its targets are thumb-sized. It keeps the warm palette and the hard edges; it drops
+ * the integer-u grid, because a 375 px screen cannot hold a 320u canvas.
+ *
+ * Still no gradients, no glassmorphism, no rounded corners, no blur.
+ */
+
+.sv {
+  --paper: #F5F0E1;
+  --ink: #1A1A1A;
+  --muted-ink: #5A5248;
+  --rule: #5A5248;
+  --accent: #B8860B;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'VT323', ui-monospace, monospace;
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+.sv-accent-cyan { --accent: #0B6E78; }
+.sv-accent-pink { --accent: #A3176A; }
+
+.sv-dark-room { --paper: #1A1A2E; --ink: #E8E8F0; --muted-ink: #9494AA; --rule: #3D3D5C; }
+.sv-dark-room.sv-accent-gold { --accent: #FFD93D; }
+.sv-dark-room.sv-accent-cyan { --accent: #00F0FF; }
+.sv-dark-room.sv-accent-pink { --accent: #FF2E97; }
+
+.sv[data-material="brick"] { background-color: #D9CDB8; }
+.sv[data-material="panel"] { background-color: #EDE0C8; }
+.sv[data-material="pegboard"] { background-color: #C9A66B; }
+.sv[data-material="plaster"] { background-color: #EDE6D6; }
+.sv[data-material="chalk"] { background-color: #2F4A3F; --ink: #E6EDE3; --muted-ink: #B8C6BC; --rule: #405E51; }
+
+.sv-rule { height: 4px; background: var(--rule); margin: 0.75rem 0; }
+.sv-rule + .sv-rule { display: none; }
+
+.sv-h1 { font-family: 'Press Start 2P', ui-monospace, monospace; font-size: 1.1rem; line-height: 1.6; margin: 0.5rem 0; color: var(--accent); }
+.sv-h2 { font-family: 'Silkscreen', ui-monospace, monospace; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; margin: 1.75rem 0 0.5rem; color: var(--muted-ink); }
+.sv-h3 { font-family: 'Pixelify Sans', system-ui, sans-serif; font-size: 1.15rem; margin: 0 0 0.25rem; }
+.sv-p { margin: 0.5rem 0; }
+.sv-tag { margin: 0.25rem 0; font-style: italic; }
+.sv-muted { color: var(--muted-ink); margin: 0.25rem 0; }
+.sv-body { white-space: pre-wrap; }
+
+.sv-quotes { display: grid; gap: 0.75rem; }
+.sv-quote { margin: 0; padding: 0.6rem 0.9rem; background: rgb(0 0 0 / 6%); border-left: 4px solid var(--accent); }
+.sv-dark-room .sv-quote { background: rgb(255 255 255 / 7%); }
+
+.sv-goals, .sv-pins { display: grid; gap: 0.9rem; grid-template-columns: 1fr; }
+@media (min-width: 34rem) { .sv-goals, .sv-pins { grid-template-columns: 1fr 1fr; } }
+
+.sv-goal, .sv-pin { padding: 0.9rem; border: 3px solid var(--rule); }
+.sv-goal.is-gold { border-color: var(--accent); }
+.sv-bar { height: 12px; background: rgb(0 0 0 / 12%); border: 2px solid var(--rule); margin: 0.4rem 0; }
+.sv-dark-room .sv-bar { background: rgb(255 255 255 / 10%); }
+.sv-bar i { display: block; height: 100%; background: var(--accent); }
+.sv-cps { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.sv-cps li.is-done { color: var(--muted-ink); text-decoration: line-through; }
+
+.sv-trophies { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.sv-trophy { width: 1.2rem; height: 1.4rem; background: var(--accent); border: 2px solid var(--rule); display: inline-block; }
+
+.sv-journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.sv-stat { padding: 0.75rem; border: 3px solid var(--rule); text-align: center; }
+.sv-stat b { display: block; font-size: 2rem; font-weight: 400; color: var(--accent); }
+.sv-stat span { color: var(--muted-ink); font-size: 0.95rem; }
+
+.sv-note { padding: 0.9rem; border: 3px solid var(--rule); }
+.sv-foot { margin-top: 2rem; }
+
+/* The privacy panel: builder-only, never in the recipient's copy. */
+.sv-privacy { margin-top: 2rem; padding: 1rem; border: 3px dashed var(--rule); display: grid; gap: 1rem; }
+@media (min-width: 34rem) { .sv-privacy { grid-template-columns: 1fr 1fr; } }
+.sv-priv-col h3 { margin: 0 0 0.4rem; }
+.sv-ok { margin: 0.15rem 0; color: #1F7A3D; }
+.sv-no { margin: 0.15rem 0; color: #8A3F33; }
+.sv-dark-room .sv-ok { color: #6BCB77; }
+.sv-dark-room .sv-no { color: #FF6B35; }
+
+.sv-expired { max-width: 34rem; margin: 4rem auto; padding: 2rem 1rem; text-align: center;
+  font-family: 'VT323', ui-monospace, monospace; font-size: 1.25rem; color: #E8E8F0; }
+.sv-expired .sv-h1 { color: #FF6B35; }
+
+/* ---- the builder ---- */
+.sb { display: grid; gap: calc(5*var(--u)); }
+.sb-step { display: grid; gap: calc(3*var(--u)); padding:calc(4*var(--u)); background: var(--surface); border: var(--u) solid var(--edge); }
+.sb-step > h2 { margin: 0; color: var(--cyan); }
+.sb-pick { display: grid; gap: calc(2*var(--u)); }
+.sb-row { display: flex; flex-wrap: wrap; gap: calc(3*var(--u)); align-items: center; }
+.sb-row label { color: var(--text); }
+.sb-note { color: var(--muted); }
+.sb-warn { color: var(--orange); }
+.sb-preview { background: var(--bg); padding: calc(3*var(--u)); border: var(--u) solid var(--edge); overflow: auto; max-height: calc(260*var(--u)); }
+.sb-link { width: 100%; min-height: calc(26*var(--u)); color: var(--lime); }
+.sb-qr { background: #fff; padding: calc(2*var(--u)); display: inline-block; }
+.sb-qr canvas { display: block; image-rendering: pixelated; }
+
+/* ---- viewer and present ---- */
+.vw-pill, .pr-exit {
+  position: absolute; z-index: 70; top: calc(16*var(--u)); right: calc(4*var(--u));
+  background: var(--gold); color: var(--ink); border: var(--u) solid var(--ink);
+  padding: calc(2*var(--u)) calc(4*var(--u)); cursor: pointer;
+}
+:root[data-mode="viewer"] .topbar .readout,
+:root[data-mode="viewer"] #pause,
+:root[data-mode="present"] .topbar,
+:root[data-mode="present"] .tabbar,
+:root[data-mode="present"] .keybar { display: none; }
+:root[data-mode="present"] .page { top: 0; bottom: 0; zoom: 1.25; }
+:root[data-mode="present"] { cursor: progress; }
+.pr-mark {
+  position: absolute; z-index: 70; bottom: calc(3*var(--u)); right: calc(4*var(--u));
+  color: var(--muted); pointer-events: none;
+}
+.pr-nav { position: absolute; z-index: 70; bottom: calc(3*var(--u)); left: calc(4*var(--u)); display: flex; gap: calc(3*var(--u)); }
+
+/* ---- print: the share view on paper ---- */
+@media print {
+  .topbar, .tabbar, .keybar, .placebar, .crt, .wipe, .power, .cab-art,
+  .sb-step, .vw-pill, .pr-exit, .pr-mark, .pr-nav, .sv-privacy { display: none !important; }
+  html, body, #app, .cabinet, .crt-window, .page {
+    position: static !important; width: auto !important; height: auto !important;
+    overflow: visible !important; background: #fff !important; inset: auto !important;
+  }
+  .sv, .sv-dark-room {
+    --paper: #fff; --ink: #000; --muted-ink: #444; --rule: #000; --accent: #000;
+    max-width: none; background: #fff !important; color: #000 !important;
+  }
+  .sv-goals, .sv-pins, .sv-privacy { grid-template-columns: 1fr !important; }
+  .sv-bar i { background: #000 !important; }
+  .sv-quote { background: none !important; border-left: 3px solid #000; }
+  .sb-qr { page-break-inside: avoid; }
+}
+
+.sv-head { margin-bottom: 1rem; }
+.sv-sec { margin-bottom: 0.5rem; }
+
+/* The app is desktop-only and says so with the RESIZE THE WINDOW card. The share view is the
+   exception: it is opened by other people, on their phones, from a message. Suppress the card
+   there, and let the share view use the whole screen. */
+:root[data-route="share"] .too-small { display: none !important; }
+/* A recipient gets the share and nothing else: the app's own chrome is not theirs to use. */
+:root[data-route="share"] .topbar,
+:root[data-route="share"] .tabbar,
+:root[data-route="share"] .keybar,
+:root[data-route="share"] .cab-art { display: none !important; }
+:root[data-route="share"] .page { position: absolute; inset: 0; padding: 0; overflow: auto; }
+:root[data-route="share"] .crt-window { width: 100vw; height: 100vh; border: 0; }
+:root[data-route="share"] .cabinet { background: none; }
+:root[data-route="share"] .cabinet::before { display: none; }

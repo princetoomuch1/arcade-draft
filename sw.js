@@ -16,7 +16,7 @@
  * never fetched, so they are never cached and never leave the device.
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';   // bumped with the Phase 12 share files: a new shell list needs a new cache name
 const SHELL = `arcade-shell-${VERSION}`;
 const DATA = `arcade-data-${VERSION}`;
 
@@ -24,12 +24,14 @@ const SHELL_FILES = [
   './', './index.html', './calibrate.html', './manifest.webmanifest',
   './src/tokens.css', './src/pixel.css', './src/app.css', './src/card.css',
   './src/pages2.css', './src/stage5.css', './src/room.css', './src/menu.css',
-  './src/apps.css', './src/hacks2.css', './src/notes2.css',
+  './src/apps.css', './src/hacks2.css', './src/notes2.css', './src/share.css',
   './src/main.js', './src/u.js', './src/store.js', './src/model.js', './src/sound.js',
   './src/sprites.js', './src/geo.js', './src/receipt.js', './src/desk.js', './src/wall.js',
   './src/pages/menu.js', './src/pages/feed.js', './src/pages/jobs.js', './src/pages/hacks.js',
   './src/pages/news.js', './src/pages/more.js', './src/pages/notes.js',
-  './src/pages/calendar.js', './src/pages/apps.js', './src/pages/options.js'
+  './src/pages/calendar.js', './src/pages/apps.js', './src/pages/options.js',
+  './src/pages/credits.js', './src/pages/share.js', './src/pages/shares.js', './src/pages/viewer.js',
+  './src/share/payload.js', './src/share/view.js', './src/share/qr.js', './src/undo.js'
 ];
 
 self.addEventListener('install', e => {

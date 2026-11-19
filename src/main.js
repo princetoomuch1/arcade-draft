@@ -22,6 +22,10 @@ const PAGES = {
   apps:    () => import('./pages/apps.js'),
   opts:    () => import('./pages/options.js'),
   credits: () => import('./pages/credits.js'),
+  share:   () => import('./pages/share.js'),
+  shares:  () => import('./pages/shares.js'),
+  viewer:  () => import('./pages/viewer.js'),
+  present: () => import('./pages/viewer.js'),
   desk:    () => import('./desk.js'),
   wall:    () => import('./wall.js')
 };
@@ -204,7 +208,9 @@ function turnSwap(from, to, fn) {
 let current = null;
 export async function go(route, params = {}) {
   const r = (route || HOME).replace(/^#\/?/, '');
-  const [name] = r.split('/');
+  // A share link puts its payload in the hash, so the route name stops at the query.
+  const [path] = r.split('?');
+  const [name] = path.split('/');
   if (!PAGES[name]) return go(HOME);
   if (location.hash !== `#/${r}`) { history.pushState({}, '', `#/${r}`); }
   if (current === name) { await mount(name, params); return; }
@@ -229,13 +235,16 @@ async function mount(name, params) {
   }
   host.innerHTML = '';
   host.scrollTop = 0;
-  const node = await mod.render(ctx, params);
+  const node = await mod.render(ctx, name === 'present' ? { ...params, mode: 'present' } : params);
   if (node) host.append(node);
   for (const b of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.tab')))
     b.setAttribute('aria-selected', String(b.dataset.route === name));
   renderKeybar(mod.keys);
   document.title = (mod.title ? mod.title + ' — ' : '') + 'Career Arcade';
   host.setAttribute('aria-label', (mod.title || name) + ' page');
+  // The share view is the one responsive surface, so the desktop-only card must not cover it:
+  // a recipient opening a link on a phone would otherwise be told to resize a window they do not have.
+  document.documentElement.dataset.route = name;
   announce((mod.title || name) + ' page');
   // Keyboard-only users land on the new page, not back at the top of the tab bar.
   // A dialog that is already open keeps focus: it asked for it first.

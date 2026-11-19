@@ -947,3 +947,80 @@ Both spec files carry a comment saying why they are CommonJS, so nobody "tidies"
 
 `e2e` is back in `tools/verify.mjs`. Every acceptance item for Phase 11 is now met except the three
 Actions running green on a real branch, which needs a GitHub remote that does not exist yet.
+
+---
+
+## Phase 12 — the Share Screen
+
+A share is the only thing in this project that leaves the machine, so the whole phase was built
+around one promise: **a share carries what you chose and nothing else.**
+
+### How that promise is kept
+
+`src/share/payload.js` builds the payload **by allowlist**, never by copying a record and deleting
+the private parts. There is no branch in the file that can read an application — exclusion by
+absence, not by filter, so the promise survives the data changing shape underneath it. Emails,
+phone numbers and the common street-address shape are masked wherever they turn up, including in
+text the user typed themselves, and the builder shows exactly what was masked so nothing is silent.
+
+Encoding is gzip via the browser's own `CompressionStream`, then base64url. Zero runtime
+dependencies, per the hard rule. The QR encoder (`src/share/qr.js`) is hand-written for the same
+reason: byte mode, error level L, versions 1 to 20, Reed–Solomon over GF(256). A payload past
+version 20 is refused with an explanation and a way forward, not drawn as an unscannable mess.
+
+### What was built
+
+- `src/share/payload.js`, `src/share/view.js`, `src/share/qr.js`
+- `src/pages/share.js` (six-step builder plus the recipient's view), `src/pages/viewer.js`
+  (viewer and present mode), `src/pages/shares.js` (the list)
+- `src/share.css` — the share view in rem and px. **This is the one place the pixel law is broken
+  on purpose**: the recipient is the one person who does not have the desktop the rest of the app
+  insists on, and a 375px screen cannot hold a 320u canvas.
+- `tests/share.test.js` (26), `tests/qr.test.js` (14), `e2e/share.spec.cjs` (9)
+
+### Bugs found by verification, not by the tests
+
+1. **The desktop-only card covered the share view.** At 375×667 a recipient opening a link from a
+   message was told to RESIZE THE WINDOW — a window they do not have. This was the exact failure
+   flagged when the responsive requirement was set. `mount()` now publishes
+   `data-route`, and `share.css` suppresses the card, the topbar, the tabbar, the keybar and the
+   cabinet art on the share route: a recipient gets the share and nothing else.
+2. **Present mode kept the app chrome.** Going straight from the viewer into present mode mounts
+   the new instance first and unmounts the old one second, so the old instance's teardown deleted
+   the `data-mode` the new one had just set — and present mode ran with the topbar and tabbar still
+   on screen. Each mount now claims the mode with a token and only gives it back if it is still
+   its own.
+3. **`fresh()` was not fresh.** `indexedDB.deleteDatabase('arcade')` comes back **blocked**: the
+   running app holds the connection, so the database is only really dropped once the page goes
+   away. Any test that seeded data and then reloaded had its seed silently wiped by that pending
+   delete. `e2e/app.cjs` now reloads once before the test starts, and the shared `fresh` / `enter`
+   helpers live there instead of being copied into each spec.
+4. **One e2e test was passing on luck.** "The alignment slider reorders the drop" ran against an
+   empty database, where every item scores the same and alignment has nothing to re-rank — so the
+   order only ever moved when the wildcard picks happened to differ. It now seeds explicit and
+   faint interests first, and passed three runs in a row before being believed.
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        282 tests, 16 files
+ audit       pass        28 modules, 12 stylesheets
+ data        pass        4 files, 25 rows
+ e2e         pass        34 tests - 20 flows, 13 axe routes, 1 keyboard sweep
+```
+
+Acceptance for Phase 12, including **share view is mobile-responsive**, tested at 375×667 in
+Playwright: no desktop-only card, no app chrome, no sideways scroll, and the masking holds in the
+recipient's own copy.
+
+`sw.js` VERSION bumped to `v2` — the shell list gained the share files, and a new shell list needs
+a new cache name or returning visitors keep the old one.
+
+### Still not verified
+
+QR scannability is proven structurally (size, finder patterns, timing, the dark module, version
+selection, determinism) but **not with a real phone camera**. PNG export is deferred to Phase 14,
+time-boxed to a day, to be done with SVG `foreignObject` — not html2canvas.
