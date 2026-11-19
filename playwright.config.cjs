@@ -12,7 +12,7 @@ module.exports = defineConfig({
   reporter: [['line']],
   /* Baselines are committed, one folder for all of them, named by route and size rather than by
      which spec file happened to take the picture. */
-  snapshotPathTemplate: 'e2e/__screenshots__/{arg}{ext}',
+  snapshotPathTemplate: 'e2e/__screenshots__/{platform}/{arg}{ext}',
   use: {
     baseURL: 'http://127.0.0.1:5174',
     ...devices['Desktop Chrome']

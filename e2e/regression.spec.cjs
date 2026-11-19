@@ -19,6 +19,15 @@ const ROUTES = ['menu', 'feed', 'jobs', 'hacks', 'news', 'more', 'notes', 'cal',
 /* A moment shortly after the seed data was generated, so every "ago" is a fixed string. */
 const FROZEN = new Date('2026-11-20T09:00:00.000Z');
 
+/* Baselines are per-platform, and only the Windows set exists so far: these were recorded on the
+   machine this was built on. On another platform the first run would compare Windows text
+   rendering against Linux text rendering and fail 26 times for a reason that is not a bug.
+   Record a set there with `npx playwright test e2e/regression.spec.cjs --update-snapshots` and
+   commit `e2e/__screenshots__/<platform>/`, and this skip lifts itself. */
+const fs = require('node:fs');
+const path = require('node:path');
+const HAVE_BASELINES = fs.existsSync(path.join(__dirname, '__screenshots__', process.platform));
+
 const SIZES = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 375, height: 667 }
@@ -28,6 +37,8 @@ for (const size of SIZES) {
   test.describe(size.name, () => {
     for (const r of ROUTES) {
       test(`${r} looks the way it was last agreed to look`, async ({ page }) => {
+        test.skip(!HAVE_BASELINES,
+          `no baselines recorded for ${process.platform} yet — run with --update-snapshots here`);
         /* emulateMedia, not test.use({reducedMotion}): the fixture did not reach the page here,
            and the news ticker kept scrolling, so no two screenshots were ever the same. */
         await page.emulateMedia({ reducedMotion: 'reduce' });
