@@ -1024,3 +1024,101 @@ a new cache name or returning visitors keep the old one.
 QR scannability is proven structurally (size, finder patterns, timing, the dark module, version
 selection, determinism) but **not with a real phone camera**. PNG export is deferred to Phase 14,
 time-boxed to a day, to be done with SVG `foreignObject` — not html2canvas.
+
+---
+
+## Phase 13 — final audit and handoff
+
+The audit was not a formality. Walking the Definition of Done line by line found four things that
+were **documented but not true**, which is the worst class of bug this project can have — the
+README was describing behaviour that did not exist.
+
+### Fixed during the audit
+
+1. **"Writes blocked at 80 MB" was a claim, not a guard.** `assertWritable()` existed, was tested,
+   and was *never called from anywhere*. The settings panel said writes were blocked while nothing
+   checked. The gate now runs inside `store.put` — the one write path, because a limit enforced at
+   call sites is a limit the next call site forgets — with the estimate cached for 30 seconds, since
+   a database that crossed 80 MB will not drop back under it within half a minute. Deletes are
+   deliberately never blocked: the way out must stay open.
+2. **A refused write was silent.** `put` throws and most call sites have no reason to catch, so the
+   app would have looked like it saved. A global `unhandledrejection` handler now turns that one
+   error into a `NOT SAVED — …` toast. Proven end to end in Playwright by telling the page it has
+   95 MB used and then pressing SAVE.
+3. **Undo was wired at two call sites and spoken of at all of them.** It covered crumple and bin.
+   It now also covers deleting a note, deleting an application slot, unpinning, removing a goal, and
+   both kinds of checkpoint tick, each through a new `store.snapshotFor(store, id)` helper that
+   takes a `structuredClone` before the change — so a later edit to the live object cannot follow the
+   snapshot, and undoing a *creation* deletes it rather than leaving a blank husk behind.
+4. **The 90-day drawer prompt did not exist.** `staleArchive()` was written and tested; no UI ever
+   called it. README already promised it. Options → DATA now lists what has sat past 90 days, says
+   *nothing happens to them unless you say so*, arms twice before clearing, and records the whole
+   batch as one undoable action.
+
+Two smaller ones:
+
+5. **README said a phone shows RESIZE THE WINDOW, full stop.** Not true since Phase 12 — the share
+   view is responsive. Corrected rather than left as a flattering simplification.
+6. **Fonts were not cached, so "works offline" meant "works offline in fallback monospace".** The
+   service worker now caches Google Fonts on first success, cache-first afterwards. The font cache
+   is deliberately *unversioned*: a font file never changes under its own URL, so re-downloading
+   them on every shell bump would be pure waste. `VERSION` → `v3`.
+
+### Definition of Done
+
+Master Prompt constraints:
+
+| | |
+| --- | --- |
+| $0 forever — no paid service, API or always-on server | **yes.** `dependencies: {}`; hosting is Pages; scraping is Actions |
+| No secrets required | **yes.** One optional GitHub token, stored locally, app works without it |
+| Static, GitHub-Pages deployable | **yes** |
+| Installable PWA, works offline | **yes**, fonts included as of this phase |
+| Free AI only | **yes** — there is no model call anywhere in the app |
+| Auto-expiry archives, never deletes | **yes.** Expired saved items → drawer; drawer → 14 days; 90 days → *offered* |
+| Personal data stays in IndexedDB | **yes.** Nothing personal is in the repository or leaves the machine except a share you build by hand |
+| No loss-framed streaks | **yes**, enforced by the copy audit |
+| No fake urgency | **yes**, same |
+| No infinite scroll | **yes.** The feed ends and says so |
+| No public rankings | **yes.** Nothing is comparative |
+| No time-spent rewards | **yes.** `NOTHING HERE COUNTS TIME SPENT` is in the app, allowlisted on purpose |
+| Self-verify loop after every task | **yes**, seven checks in `npm run verify`, run as the gate |
+
+Prompt 2 additions:
+
+| | |
+| --- | --- |
+| JSON schemas, camelCase | **yes**, `schemas/*.json`, snake_case recorded as REJECTED |
+| Data validator, exit 1 on any invariant failure | **yes**, `tools/validate-data.mjs` (the spec said `scripts/`; all tooling lives in `tools/`) |
+| Import flow: preview, then merge or replace, never silent | **yes** |
+| Global undo, last 20, across delete/crumple/archive/unsave/checkpoint | **yes**, completed this phase |
+| 90-day archive prompt + storage guard (warn 50, block 80) | **yes**, completed this phase |
+| Playwright critical flows | **yes**, 22 flows |
+| axe-core, 0 critical on every route | **yes**, 13 routes, 0 critical, 0 serious |
+| `/credits` | **yes** |
+| `docs/deploy.md` | **yes** |
+| README: refresh, deploy, backup, share, limitations, camelCase note | **yes**, refresh and share sections added this phase |
+| Share screen, redaction, expiry, revocation, exports | **yes** (Phase 12) |
+| Privacy test decoding a real payload | **yes** — asserts on the decoded bytes, not the rendered page |
+| Share view mobile-responsive, tested at 375×667 | **yes**, now its own `mobile` Playwright project |
+| `docs/handoff.md` | **yes**, this phase |
+
+Not met, honestly:
+
+- **The three workflows have never run.** There is no GitHub remote, so `verify`, `deploy` and
+  `scrape` are written and lint-clean but unproven. This is the one Definition-of-Done item that
+  cannot be ticked from this machine.
+- **No scrape sources.** By design, but it means the data is fictional.
+- **QR unscanned by a real camera.**
+
+### Checks
+
+```
+ build       pass
+ typecheck   pass
+ lint        pass
+ test        pass        295 tests, 17 files
+ audit       pass        28 modules, 12 stylesheets
+ data        pass        4 files, 25 rows
+ e2e         pass        36 tests - desktop 35, mobile 1
+```

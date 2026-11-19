@@ -8,6 +8,7 @@
  */
 
 import * as S from '../store.js';
+import * as UNDO from '../undo.js';
 
 export const title = 'CALENDAR';
 export const keys = [['T', 'TODAY']];
@@ -173,9 +174,12 @@ export async function render(ctx) {
       b.append(el('span', 'box'), el('span', 'tx', c.text));
       b.onclick = async () => {
         const plan = await ensurePlan(q);
+        const back = await S.snapshotFor('plans', plan.id);
         plan.checkpoints[i].done = !plan.checkpoints[i].done;
         await S.savePlan(plan); plans = await S.all('plans');
         plan.checkpoints[i].done ? ctx.SFX.checkpoint() : ctx.SFX.click();
+        UNDO.record((plan.checkpoints[i].done ? 'ticked ' : 'unticked ') + (plan.checkpoints[i].text || 'a checkpoint'),
+          async () => { await back(); plans = await S.all('plans'); draw(); });
         draw();
       };
       const x = el('button', 'btn is-ghost t-small', '×');

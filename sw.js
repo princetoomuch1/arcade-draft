@@ -16,9 +16,12 @@
  * never fetched, so they are never cached and never leave the device.
  */
 
-const VERSION = 'v2';   // bumped with the Phase 12 share files: a new shell list needs a new cache name
+const VERSION = 'v3';   // v2: the Phase 12 share files. v3: the font cache below.
 const SHELL = `arcade-shell-${VERSION}`;
 const DATA = `arcade-data-${VERSION}`;
+/* Fonts are deliberately NOT versioned: a font file never changes under its own URL, so there is
+   nothing to invalidate, and re-downloading them on every shell bump would be waste. */
+const FONTS = 'arcade-fonts';
 
 const SHELL_FILES = [
   './', './index.html', './calibrate.html', './manifest.webmanifest',
@@ -46,7 +49,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) {
-      if (k.startsWith('arcade-') && k !== SHELL && k !== DATA) await caches.delete(k);
+      if (k.startsWith('arcade-') && k !== SHELL && k !== DATA && k !== FONTS) await caches.delete(k);
     }
     await self.clients.claim();
   })());
@@ -57,7 +60,29 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;   // fonts and anything else: straight through
+
+  /* Google Fonts, cached on first success and served from the cache after that.
+     The app is meant to work offline, and offline without the fonts is the app in fallback
+     monospace — readable, but not the thing that was designed. These are the only cross-origin
+     requests the app makes, they are free and keyless, and a font file never changes under its
+     own URL, so cache-first costs nothing in freshness. */
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    e.respondWith((async () => {
+      const hit = await caches.match(req);
+      if (hit) return hit;
+      try {
+        const res = await fetch(req);
+        // an opaque no-cors response is still worth keeping: the browser can use it, we just cannot read it
+        if (res.ok || res.type === 'opaque') (await caches.open(FONTS)).put(req, res.clone());
+        return res;
+      } catch {
+        return new Response('', { status: 504 });     // the page falls back to monospace
+      }
+    })());
+    return;
+  }
+
+  if (url.origin !== self.location.origin) return;   // anything else: straight through
 
   // Data: network first, cache only as a fallback, so a stale row is never presented as fresh.
   if (url.pathname.includes('/data/')) {

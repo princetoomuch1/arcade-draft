@@ -12,9 +12,23 @@ module.exports = defineConfig({
   reporter: [['line']],
   use: {
     baseURL: 'http://127.0.0.1:5174',
-    viewport: { width: 1280, height: 820 },
     ...devices['Desktop Chrome']
   },
+  /* Two projects, because the app has two shapes. Everything is desktop-only by decision except
+     the share view, which a recipient opens on a phone from a message — so the tests tagged
+     @mobile, and only those, run at 375x667. */
+  projects: [
+    {
+      name: 'desktop',
+      grepInvert: /@mobile/,
+      use: { viewport: { width: 1280, height: 820 } }
+    },
+    {
+      name: 'mobile',
+      grep: /@mobile/,
+      use: { viewport: { width: 375, height: 667 } }
+    }
+  ],
   webServer: {
     command: 'node tools/serve.mjs',
     url: 'http://127.0.0.1:5174',

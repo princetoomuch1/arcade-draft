@@ -2,6 +2,7 @@
    zones that hold your saved items, goal cards with checkpoints, and a shelf with a plant and trophies. */
 
 import * as S from './store.js';
+import * as UNDO from './undo.js';
 import { ditherTo16 } from './sprites.js';
 import { WALL_ZONES } from './model.js';
 
@@ -180,8 +181,12 @@ export async function render(ctx) {
         if (pin.caption) c.append(el('span', 'pcap t-small', pin.caption));
         const x = el('button', 'btn is-ghost t-small', 'UNPIN');
         x.onclick = async () => {
+          const back = await S.snapshotFor('wallpins', pin.id);
           await S.del('wallpins', pin.id); pins = await S.all('wallpins');
           ctx.SFX.del(); drawZones();
+          UNDO.record('unpinned ' + (pin.caption || pin.content || 'a pin').slice(0, 40),
+            async () => { await back(); pins = await S.all('wallpins'); drawZones(); });
+          ctx.toast('UNPINNED', 'is-orange', { undo: true });
         };
         c.append(x);
         z.append(c);
@@ -225,10 +230,13 @@ export async function render(ctx) {
         const b = el('button', 'cp t-small' + (c.done ? ' is-done' : ''));
         b.append(el('span', 'box'), el('span', 'tx', c.t));
         b.onclick = async () => {
+          const back = await S.snapshotFor('goals', g.id);
           c.done = !c.done;
           c.done_at = c.done ? Date.now() : null;
           if (c.done) burst(b);
           await S.put('goals', g);
+          UNDO.record((c.done ? 'ticked ' : 'unticked ') + (c.t || 'a checkpoint'),
+            async () => { await back(); goals = await S.all('goals'); drawGoals(); });
           c.done ? (g.checkpoints.every(x => x.done) ? ctx.SFX.levelUp() : ctx.SFX.checkpoint()) : ctx.SFX.click();
           drawGoals();
         };
@@ -237,7 +245,11 @@ export async function render(ctx) {
       const rm = el('button', 'mini t-small', 'REMOVE GOAL');
       rm.onclick = async () => {
         if (rm.dataset.armed !== '1') { rm.dataset.armed = '1'; rm.textContent = 'SURE? CLICK AGAIN'; return; }
+        const back = await S.snapshotFor('goals', g.id);
         await S.del('goals', g.id); goals = await S.all('goals'); ctx.SFX.del(); drawGoals();
+        UNDO.record('removed the goal ' + g.title,
+          async () => { await back(); goals = await S.all('goals'); drawGoals(); });
+        ctx.toast('GOAL REMOVED', 'is-orange', { undo: true });
       };
       card.append(rm); goalsHost.append(card);
     }

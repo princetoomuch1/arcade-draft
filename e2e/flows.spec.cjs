@@ -174,3 +174,59 @@ test('the feed ends rather than scrolling for ever', async ({ page }) => {
   const text = await page.locator('#page').innerText();
   expect(text.replace(/NO LOAD MORE HERE[^\n]*/gi, '')).not.toMatch(/load more/i);
 });
+
+test('the drawer prompt offers a cleanup, never takes one, and undo brings it back', async ({ page }) => {
+  await enter(page, 'opts');
+  await page.evaluate(async () => {
+    const S = await import('/src/store.js');
+    await S.put('personal', {
+      id: 'old1', state: S.STATE.DRAWER, drawer_at: Date.now() - 200 * 864e5,
+      snapshot: { title: 'An old thing' }
+    });
+  });
+  await page.goto('/#/feed');
+  await page.waitForTimeout(400);
+  await page.goto('/#/opts');
+  await page.waitForTimeout(900);
+  await page.getByRole('button', { name: 'DATA', exact: true }).click();
+  await page.waitForTimeout(600);
+
+  await expect(page.locator('#page')).toContainText('1 ARCHIVED ITEM HAS SAT IN THE DRAWER');
+  await expect(page.locator('#page')).toContainText('NOTHING HAPPENS TO THEM UNLESS YOU SAY SO');
+
+  const btn = page.locator('#drawer-clear');
+  await expect(btn).toContainText('CLEAR THESE 1');
+  await btn.click();                                     // first click only arms it
+  await expect(btn).toContainText('CLICK AGAIN');
+  expect(await page.evaluate(async () =>
+    !!(await (await import('/src/store.js')).get('personal', 'old1')))).toBe(true);
+
+  await btn.click();
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(async () =>
+    !!(await (await import('/src/store.js')).get('personal', 'old1')))).toBe(false);
+
+  await page.locator('.toast-undo').click();
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(async () =>
+    !!(await (await import('/src/store.js')).get('personal', 'old1')))).toBe(true);
+});
+
+test('a write refused by the storage guard says NOT SAVED instead of looking saved', async ({ page }) => {
+  await enter(page, 'feed');
+  /* Tell the page it is out of room, then try to save something. The guard throws from store.put,
+     and the point of the test is that the refusal reaches the screen rather than the console. */
+  await page.evaluate(async () => {
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { estimate: async () => ({ usage: 95e6, quota: 100e6 }), persist: async () => false }
+    });
+    const S = await import('/src/store.js');
+    S.resetWriteGate();
+  });
+  const save = page.getByRole('button', { name: /^SAVE/ }).first();
+  await save.click();
+  await page.waitForTimeout(900);
+  await expect(page.locator('.z-toast')).toContainText('NOT SAVED');
+  await expect(page.locator('.z-toast')).toContainText('WRITES ARE BLOCKED');
+});

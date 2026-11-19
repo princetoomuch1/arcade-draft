@@ -415,6 +415,17 @@ async function boot() {
   refreshChrome();
 
   addEventListener('keydown', onKey);
+  /* A write refused by the storage guard throws from store.put, and most call sites have no reason
+     to catch it. Without this the refusal would be silent and the app would look like it had saved.
+     Say it out loud instead, so "new writes are blocked" is something the user is told, not a line
+     in a settings panel nobody opened. */
+  addEventListener('unhandledrejection', e => {
+    const msg = String(e.reason?.message || e.reason || '');
+    if (/writes are blocked/i.test(msg)) {
+      e.preventDefault();
+      toast('NOT SAVED — ' + msg.toUpperCase(), 'is-orange');
+    }
+  });
   addEventListener('popstate', () => go(location.hash || '#/feed'));
   addEventListener('resize', () => { apply(ctx.settings.density, document.documentElement, frameNow()); refreshChrome(); });
   // Leaving fullscreen with Esc or the browser's own control must bring the cabinet back.

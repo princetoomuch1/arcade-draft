@@ -118,8 +118,7 @@ test('the payload carries only what was ticked: no applications, no contacts, no
   expect(decoded.json).toContain('Interview prep');
 });
 
-test('the share view is mobile-responsive: no desktop-only card, no sideways scroll', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
+test('the share view is mobile-responsive: no desktop-only card, no sideways scroll @mobile', async ({ page }) => {
   await enter(page, 'share');
   await seed(page);
   await page.goto('/#/share');

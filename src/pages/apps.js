@@ -9,6 +9,7 @@
  */
 
 import * as S from '../store.js';
+import * as UNDO from '../undo.js';
 import { companySprite } from '../sprites.js';
 import { metrics } from '../u.js';
 
@@ -197,7 +198,10 @@ export async function render(ctx) {
     const del = el('button', 'btn is-ghost t-small', 'DELETE SLOT');
     del.onclick = async () => {
       if (del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = 'SURE? CLICK AGAIN'; return; }
+      const back = await S.snapshotFor('apps', r.id);
       await S.del('apps', r.id); ctx.SFX.del(); await refresh();
+      UNDO.record('deleted the slot ' + (r.title || r.id), async () => { await back(); await refresh(); });
+      ctx.toast('SLOT DELETED', 'is-orange', { undo: true });
     };
     foot.append(el('span', 't-small', `UPDATED ${day(r.updated)}`), del);
     card.append(foot);

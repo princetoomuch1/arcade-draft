@@ -98,6 +98,45 @@ The phase plan and the evidence for each one live in `BUILD_LOG.md`.
 | 9 — scrape pipeline | built, no sites configured. Use `npm run check-source -- <url>` before adding one. `data/*.json` is still fictional seed data, every row carries `_mock: true` |
 | 10 — PWA, accessibility, polish | done. Desktop only, by decision: installable and offline, but a phone still shows RESIZE THE WINDOW |
 
+## Refresh the data
+
+The feed reads `data/*.json` from the deployed site, so refreshing the data means replacing those
+files — there is no server and nothing runs on a schedule you pay for.
+
+```bash
+npm run check-source -- https://example.org/opportunities   # vet a source before trusting it
+npm run scrape                                             # writes data/*.json
+npm run validate                                           # refuses to ship a broken file
+```
+
+`npm run scrape` has **no sites configured**, by design: a scraper pointed at a site that has not
+been vetted is how this kind of project starts lying. Until you add one, `data/*.json` is fictional
+seed data and every row carries `_mock: true`.
+
+The service worker is **network-first for data** and cache-first for the shell, so a refreshed
+`data/*.json` reaches an already-installed app on its next load. A changed shell needs the
+`VERSION` bump in `sw.js` described in [docs/deploy.md](docs/deploy.md).
+
+## Share a wall
+
+MORE → SHARE builds a share in six steps. **Nothing is ticked to begin with**, applications can
+never be shared at all, and emails, phone numbers and street addresses are masked wherever they
+turn up — including in text you typed yourself. The builder shows exactly what it masked.
+
+Two kinds of share:
+
+| Kind | Link | Revocation |
+| --- | --- | --- |
+| Embedded | carries its own contents in the URL (`#/share?d=…`) | **cannot be revoked.** It stops working when it expires |
+| Hosted file | a short link to a file you deploy | delete the file and the link dies |
+
+`/shares` lists what you made — not what anyone opened, because nothing reports back. Exports are
+PDF (via the print stylesheet), a Markdown summary, and a QR code drawn in the browser. The share
+view is the one responsive surface in the app: a recipient opens it on a phone, from a message.
+
+`/viewer` shows your own room read-only, `/present` walks it for a call. Both hide what a share
+hides, and both stay desktop-first.
+
 ## Back up and restore
 
 Everything personal lives in IndexedDB on this machine and is **not** in the repository.
@@ -127,8 +166,19 @@ repository. Build tools are MIT / Apache-2.0 / MPL-2.0. Nothing is paid for.
 
 ## Known limitations
 
-- Desktop only. A phone shows RESIZE THE WINDOW; that is a decision, not a gap.
+- Desktop only, by decision — **except the share view**, which is responsive down to 375px wide,
+  because the recipient of a link is the one person who does not have your desk. Every other route
+  shows RESIZE THE WINDOW on a narrow screen.
+- QR codes are verified structurally (size, finder patterns, timing, version selection,
+  determinism) but have **not** been scanned with a real phone camera.
+- PNG export of the wall is deferred: see BUILD_LOG.md. html2canvas was ruled out — a runtime
+  dependency would cost the offline and longevity guarantee.
 - No scrape sources configured, so `data/*.json` is fictional seed data (`_mock: true` on every row).
 - `sw.js` is not covered by `tsc` because its global scope conflicts with the DOM lib; ESLint checks it.
 - `verify.sh` from the build spec is `tools/verify.mjs` here: same steps and exit codes, but Node so
-  it runs on Windows.
+  it runs on Windows. `scripts/validate-data.mjs` from the spec is `tools/validate-data.mjs`, so all
+  the tooling sits in one folder.
+- **Field names are camelCase everywhere**, in the JSON schemas and in `data/*.json`. The spec's
+  snake_case was considered and rejected: the existing app, the IndexedDB records and the schemas
+  would have had to disagree with each other during the rename, and a half-renamed field is the
+  kind of bug that shows up as missing data months later. Recorded as REJECTED in BUILD_LOG.md.

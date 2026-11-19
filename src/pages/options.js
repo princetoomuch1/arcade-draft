@@ -2,6 +2,7 @@
    Every setting writes through store.setSetting and takes effect at once where it can. */
 
 import * as S from '../store.js';
+import * as UNDO from '../undo.js';
 import { apply, DENSITY } from '../u.js';
 import { setVolume, setMuted, setHoverBlips } from '../sound.js';
 
@@ -275,6 +276,38 @@ export async function render(ctx) {
         storage.style.color = r.level === 'block' ? 'var(--danger)' : r.level === 'warn' ? 'var(--orange)' : 'var(--muted)';
       });
 
+      /* The 90-day drawer prompt. Offered, never automatic: this app archives rather than deletes,
+         so the only thing that may remove an archived record is the person who archived it. */
+      const stale = el('div');
+      S.all('personal').then(recs => {
+        const old = S.staleArchive(recs);
+        if (!old.length) {
+          stale.append(el('p', 'sb-note t-small',
+            `NOTHING IN THE DRAWER IS OLDER THAN ${S.RETENTION.archivePromptDays} DAYS.`));
+          return;
+        }
+        stale.append(el('p', 'sb-note t-small',
+          `${old.length} ARCHIVED ITEM${old.length === 1 ? ' HAS' : 'S HAVE'} SAT IN THE DRAWER FOR OVER `
+          + `${S.RETENTION.archivePromptDays} DAYS. NOTHING HAPPENS TO THEM UNLESS YOU SAY SO.`));
+        const go = el('button', 'btn t-small', `CLEAR THESE ${old.length}`);
+        go.id = 'drawer-clear';
+        go.onclick = async () => {
+          if (go.dataset.armed !== '1') {
+            go.dataset.armed = '1'; go.textContent = 'EXPORT FIRST IF UNSURE. CLICK AGAIN'; return;
+          }
+          const backs = [];
+          for (const r of old) backs.push(await S.snapshotFor('personal', r.id));
+          for (const r of old) await S.del('personal', r.id);
+          UNDO.record(`cleared ${old.length} from the drawer`, async () => { for (const b of backs) await b(); });
+          S.resetWriteGate();
+          ctx.SFX.del();
+          ctx.toast(`CLEARED ${old.length} FROM THE DRAWER`, 'is-orange', { undo: true });
+          stale.innerHTML = '';
+          stale.append(el('p', 'sb-note t-small', 'DRAWER TIDIED.'));
+        };
+        stale.append(go);
+      });
+
       const wipe = el('button', 'btn t-small', 'ERASE ALL MY DATA');
       wipe.style.color = 'var(--danger)';
       wipe.onclick = async () => {
@@ -282,7 +315,7 @@ export async function render(ctx) {
         for (const s of ['personal', 'notes', 'goals', 'apps', 'weights', 'meta']) for (const r of await S.all(s)) await S.del(s, r.id);
         ctx.SFX.del(); location.reload();
       };
-      return [note, exp, imp, file, host, storage, wipe];
+      return [note, exp, imp, file, host, storage, stale, wipe];
     }]
   ];
 

@@ -134,14 +134,52 @@ function rewrite(store, fn) {
 }
 
 const tx = (store, mode = 'readonly') => open().then(d => d.transaction(store, mode).objectStore(store));
-export const put = (store, val) => tx(store, 'readwrite').then(s => new Promise((res, rej) => {
-  const r = s.put(val); r.onsuccess = () => res(val); r.onerror = () => rej(r.error); }));
+
+/* The storage block runs here, on the one write path, because a limit enforced anywhere else is
+   a limit the next call site forgets. `navigator.storage.estimate()` is too slow to call on every
+   keystroke, so the answer is cached for half a minute — a database that crossed 80 MB is not
+   going to drop back under it within thirty seconds. */
+const GATE_MS = 30000;
+let gate = { level: 'ok', message: '', at: 0 };
+async function gateWrite() {
+  if (Date.now() - gate.at < GATE_MS) {
+    if (gate.level === 'block') throw new Error(gate.message);
+    return;
+  }
+  const r = await storageReport();
+  gate = { level: r.level, message: r.message, at: Date.now() };
+  if (r.level === 'block') throw new Error(r.message);
+}
+/** Only for tests and for the moment after a user frees space: forget the cached verdict. */
+export const resetWriteGate = () => { gate = { level: 'ok', message: '', at: 0 }; };
+
+export const put = async (store, val) => {
+  await gateWrite();
+  return tx(store, 'readwrite').then(s => new Promise((res, rej) => {
+    const r = s.put(val); r.onsuccess = () => res(val); r.onerror = () => rej(r.error); }));
+};
 export const get = (store, id) => tx(store).then(s => new Promise((res, rej) => {
   const r = s.get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
 export const all = store => tx(store).then(s => new Promise((res, rej) => {
   const r = s.getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }));
 export const del = (store, id) => tx(store, 'readwrite').then(s => new Promise((res, rej) => {
   const r = s.delete(id); r.onsuccess = () => res(); r.onerror = () => rej(r.error); }));
+
+/**
+ * Take a restore function for one record BEFORE changing it, so undo can put the world back
+ * exactly as it was. A record that did not exist is restored by deleting it again, rather than by
+ * writing a blank one — undoing a creation must not leave a husk behind.
+ *
+ * This exists because undo was wired at two call sites and claimed at all of them. A helper is
+ * harder to forget than a remembered pattern.
+ *
+ * @returns {Promise<() => Promise<void>>}
+ */
+export async function snapshotFor(store, id) {
+  const before = await get(store, id);
+  const copy = before ? structuredClone(before) : null;
+  return async () => { if (copy) await put(store, copy); else await del(store, id); };
+}
 
 /* Ask the browser not to evict this: the saved items are the only copy. */
 export async function persist() {

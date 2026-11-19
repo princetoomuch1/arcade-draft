@@ -6,6 +6,7 @@
  */
 
 import * as S from '../store.js';
+import * as UNDO from '../undo.js';
 import { ditherTo16 } from '../sprites.js';
 
 export const title = 'NOTES';
@@ -275,7 +276,10 @@ export async function render(ctx) {
     const d = el('button', 'btn t-small', 'DELETE');
     d.onclick = async () => {
       if (d.dataset.armed !== '1') { d.dataset.armed = '1'; d.textContent = 'SURE? CLICK AGAIN'; return; }
+      const back = await S.snapshotFor('notes', n.id);
       await S.del('notes', n.id); await reload(); ctx.SFX.del(); list();
+      UNDO.record('deleted the note ' + (n.title || 'untitled'), async () => { await back(); await reload(); list(); });
+      ctx.toast('NOTE DELETED', 'is-orange', { undo: true });
     };
     const b = el('button', 'btn is-ghost t-small', 'BACK'); b.onclick = () => { ctx.SFX.back(); list(); };
     row.append(e, craft, d, b);
